@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'salga.wsgi.application'
 
 DATABASES = {
     'default': {
-        'NAME': os.environ.get('DB_NAME', 'SalgaConverged_sql'),
+        'NAME': 'SalgaConverged_sql',
         'ENGINE': 'sqlserver',
         'HOST': os.environ.get('DB_HOST', '172.16.175.128'),
         'PORT': os.environ.get('DB_PORT', '5171'),
@@ -125,3 +125,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
