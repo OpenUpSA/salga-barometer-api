@@ -1,1 +1,1 @@
-web: gunicorn salga.wsgi:application :9000 --log-file - 
+web: gunicorn salga.wsgi:application -b :9000 --log-file - 
