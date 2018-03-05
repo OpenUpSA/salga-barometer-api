@@ -110,7 +110,13 @@ if not DEBUG:
     }
 
 
-
+if not DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+            'LOCATION': '/var/tmp/django_cache',
+        }
+    }
 
 
 # Internationalization
