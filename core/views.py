@@ -12,7 +12,8 @@ from .models import (Govcat, Gov,
                      Govindicatorrank, Indicator,
                      Mandategroup, Grouping,
                      Govrank,
-                     Govindicator)
+                     Govindicator,
+                     Yearref)
 
 from .serializers import (CategorySerializer,
                           CategoryDescriptionSerializer,
@@ -23,7 +24,8 @@ from .serializers import (CategorySerializer,
                           SubGroupingSerializer,
                           GovernmentRankingSerializer,
                           IndicatorValueSerializer,
-                          MandateDetailSerializer)
+                          MandateDetailSerializer,
+                          YearSerializer)
 
 
 # @api_view(['GET'])
@@ -281,3 +283,13 @@ class MandateDetailView(generics.ListAPIView):
     def get_queryset(self):
         mandate_id = self.kwargs['mgid']
         return Indicator.objects.filter(mgid=mandate_id)
+
+
+class YearView(generics.ListAPIView):
+    """
+    Return all the avaliable years
+    """
+    serializer_class = YearSerializer
+
+    def get_queryset(self):
+        return Yearref.objects.all()

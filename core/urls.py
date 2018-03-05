@@ -36,6 +36,7 @@ urlpatterns = [
         name='sub_group'),
     url(r'^groupings/subgroups/(?P<gid>[\d]+)$',
         views.SubGroupIndicators.as_view(),
-        name='subgroup_indicators')
+        name='subgroup_indicators'),
+    url(r'^years$', views.YearView.as_view(), name='year')
 
 ]

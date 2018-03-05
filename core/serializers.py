@@ -2,7 +2,8 @@ from .models import (Govcat,
                      Gov, Govindicatorrank,
                      Indicator, Grouping,
                      Mandategroup, Govrank,
-                     Govindicator)
+                     Govindicator, Yearref)
+
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
@@ -201,3 +202,10 @@ class MandateDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Indicator
         fields = ('iid', 'name', 'code', 'scale')
+
+
+class YearSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Yearref
+        fields = ('yearid', 'yr')
