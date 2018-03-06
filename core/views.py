@@ -1,9 +1,6 @@
 import coreapi
 import coreschema
-from rest_framework.response import Response
 from rest_framework import generics
-from rest_framework.decorators import api_view
-from rest_framework.reverse import reverse
 from rest_framework.schemas import AutoSchema
 
 from .exceptions import TooManyResultsException
@@ -19,23 +16,13 @@ from .serializers import (CategorySerializer,
                           CategoryDescriptionSerializer,
                           GovernmentDetailSerializer,
                           IndicatorRankSerializer,
-                          IndicatorSerializer, MandateGroupSerializer,
+                          MandateGroupSerializer,
                           GroupingSerializer,
                           SubGroupingSerializer,
                           GovernmentRankingSerializer,
                           IndicatorValueSerializer,
                           MandateDetailSerializer,
                           YearSerializer)
-
-
-# @api_view(['GET'])
-# def api_root(request):
-#     return Response({
-#         'categories': reverse('api:category', request=request),
-#         'indicators': reverse('api:indicator', request=request),
-#         'mandates': reverse('api:mandate', request=request),
-#         'groupings': reverse('api:grouping', request=request)
-#     })
 
 
 class CategoryView(generics.ListAPIView):
@@ -93,7 +80,7 @@ class GovernmentDetailView(generics.ListAPIView):
 
 class GovernmentIndicatorRankingView(generics.ListAPIView):
     """
-    Return indicator ranking for a government
+    Return indicator rankings for a government
     """
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
@@ -128,7 +115,7 @@ class GovernmentIndicatorRankingView(generics.ListAPIView):
 
 class GovernmentRankingView(generics.ListAPIView):
     """
-    The overrall rank of a goverment with the mandate scores.
+    Return the mandate scores for a government
     """
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
@@ -159,16 +146,6 @@ class GovernmentRankingView(generics.ListAPIView):
         return Govrank.objects.filter(govid_id=govid)
 
 
-# class Indicators(generics.ListAPIView):
-#     """
-#     Return a list of indicators
-#     """
-#     serializer_class = IndicatorSerializer
-
-#     def get_queryset(self):
-#         return Indicator.objects.all()[:100]
-
-
 class Group(generics.ListAPIView):
     """
     Show all the various groupings
@@ -194,7 +171,7 @@ class Group(generics.ListAPIView):
 
 class SubGroup(generics.ListAPIView):
     """
-    List all the subgroups for groups
+    Return a list of subgroups for a group
     """
     serializer_class = SubGroupingSerializer
 
@@ -205,9 +182,7 @@ class SubGroup(generics.ListAPIView):
 
 class SubGroupIndicators(generics.ListAPIView):
     """
-    Get all the values for a particular government and indicators
-    Eg: Subgroup = Population Demographic Trends id= 1087
-    Eg: select * from grouping where parentGid=1087
+    Return indicator values of a group for a particular government
     """
     serializer_class = IndicatorValueSerializer
 
