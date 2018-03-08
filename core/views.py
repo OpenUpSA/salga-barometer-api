@@ -184,14 +184,39 @@ class SubGroupIndicators(generics.ListAPIView):
     """
     Return indicator values of a group for a particular government
     """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'gov',
+            required=True,
+            location='query',
+            schema=coreschema.String(
+                description='Unique identifier for gorvernment'
+            )
+        ),
+        coreapi.Field(
+            'year',
+            required=True,
+            location='query',
+            schema=coreschema.String(
+                description='full year of ranking eg: 2016'
+            )
+        ),
+        coreapi.Field(
+            'gid',
+            required=True,
+            location='query',
+            schema=coreschema.String(
+                description='Unique identifier for a subgroup'
+            )
+        )
+    ])
     serializer_class = IndicatorValueSerializer
 
     def get_queryset(self):
         subgroup_id = self.kwargs['gid']
-        print(subgroup_id)
-        gov = self.request.query_params.get('government', None)
+        gov_id = self.request.query_params.get('gov', None)
         year = self.request.query_params.get('year', None)
-        if gov is None or year is None:
+        if gov_id is None or year is None:
             raise TooManyResultsException()
         else:
             indi_exists = Indicator\
@@ -202,7 +227,7 @@ class SubGroupIndicators(generics.ListAPIView):
                 return Govindicator\
                     .objects\
                     .only('value', 'iid__name', 'iid__parentgid__name')\
-                    .filter(govid__name=gov,
+                    .filter(govid=gov_id,
                             yearid__yr=year,
                             iid__parentgid__parentgid=subgroup_id
                     )\
@@ -211,7 +236,7 @@ class SubGroupIndicators(generics.ListAPIView):
                 .objects\
                 .only('value', 'iid__name', 'iid__parentgid__name')\
                 .filter(
-                    govid__name=gov,
+                    govid__name=gov_id,
                     yearid__yr=year,
                     iid__parentgid=subgroup_id
                 )\
