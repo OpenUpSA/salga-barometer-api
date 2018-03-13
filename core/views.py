@@ -2,6 +2,7 @@ import coreapi
 import coreschema
 from rest_framework import generics
 from rest_framework.schemas import AutoSchema
+from rest_framework.exceptions import NotFound
 
 from .exceptions import TooManyResultsException
 
@@ -12,24 +13,14 @@ from .models import (Govcat, Gov,
                      Govindicator,
                      Yearref)
 
-from .serializers import (CategorySerializer,
-                          CategoryDescriptionSerializer,
-                          GovernmentDetailSerializer,
-                          IndicatorRankSerializer,
-                          MandateGroupSerializer,
-                          GroupingSerializer,
-                          SubGroupingSerializer,
-                          GovernmentRankingSerializer,
-                          IndicatorValueSerializer,
-                          MandateDetailSerializer,
-                          YearSerializer)
+from . import serializers
 
 
 class CategoryView(generics.ListAPIView):
     """
     Return a list of all the government categories.
     """
-    serializer_class = CategorySerializer
+    serializer_class = serializers.CategorySerializer
 
     def get_queryset(self):
         return Govcat.objects.all()
@@ -50,7 +41,7 @@ class CategoryDescriptionView(generics.ListAPIView):
         ),
     ])
 
-    serializer_class = CategoryDescriptionSerializer
+    serializer_class = serializers.CategoryDescriptionSerializer
 
     def get_queryset(self):
         gcid = self.kwargs['gcid']
@@ -71,16 +62,51 @@ class GovernmentDetailView(generics.ListAPIView):
             )
         ),
     ])
-    serializer_class = GovernmentDetailSerializer
+    serializer_class = serializers.GovernmentDetailSerializer
 
     def get_queryset(self):
         govid = self.kwargs['govid']
         return Gov.objects.filter(govid=govid)
 
 
+class CategoryIndicatorOverallRankView(generics.ListAPIView):
+    """
+
+    Return Overall indicator rankings for all the governments within a
+    particular government category
+    """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'cat_id',
+            required=True,
+            location='path',
+            schema=coreschema.String(
+                description='Unique identifier for a gorvernment category'
+            )
+        ),
+    ])
+
+    serializer_class = serializers.CategoryIndicatorRankSerializer
+
+    def get_queryset(self):
+        cat_id = self.kwargs['cat_id']
+        year = self.request.query_params.get('year', None)
+        if year is not None:
+            return Govindicatorrank.objects.filter(
+                govid__gcid=cat_id,
+                yearid__yr=year
+            ).order_by('ranking').select_related('govid')
+        latest_year = Yearref.objects.latest('yearid')
+        return Govindicatorrank.objects.filter(
+            govid__gcid=cat_id,
+            yearid=latest_year
+        ).order_by('ranking').select_related('govid')
+
+
 class GovernmentIndicatorRankingView(generics.ListAPIView):
     """
-    Return indicator rankings for a government
+
+    Return performance indicator rankings for a particular government.
     """
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
@@ -100,7 +126,7 @@ class GovernmentIndicatorRankingView(generics.ListAPIView):
             )
         )
     ])
-    serializer_class = IndicatorRankSerializer
+    serializer_class = serializers.IndicatorRankSerializer
 
     def get_queryset(self):
         govid = self.kwargs['govid']
@@ -111,6 +137,46 @@ class GovernmentIndicatorRankingView(generics.ListAPIView):
                 yearid__yr=year
             )
         return Govindicatorrank.objects.filter(govid_id=govid)
+
+
+class GovernmentOverrallRankingView(generics.ListAPIView):
+    """
+
+    Return government rankings based on the mandate scores for a particular
+    government category
+
+    """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'cat_id',
+            required=True,
+            location='path',
+            schema=coreschema.String(
+                description='Unique identifier for a gorvernment category'
+            )
+        ),
+    ])
+    serializer_class = serializers.CategoryOverallRankingSerializer
+
+    def get_queryset(self):
+        cat_id = self.kwargs['cat_id']
+        year = self.request.query_params.get('year', None)
+        if year is not None:
+            result = Govrank.objects.filter(
+                yearid__yr=year,
+                govid__gcid=cat_id
+            ).order_by('ranking')
+            if not result:
+                raise NotFound
+            return result
+        latest_year = Yearref.objects.latest('yearid')
+        result = Govrank.objects.filter(
+            yearid=latest_year,
+            govid__gcid=cat_id
+        ).order_by('ranking')
+        if not result:
+            raise NotFound
+        return result
 
 
 class GovernmentRankingView(generics.ListAPIView):
@@ -135,7 +201,7 @@ class GovernmentRankingView(generics.ListAPIView):
             )
         )
     ])
-    serializer_class = GovernmentRankingSerializer
+    serializer_class = serializers.GovernmentRankingSerializer
 
     def get_queryset(self):
         govid = self.kwargs['govid']
@@ -160,7 +226,7 @@ class Group(generics.ListAPIView):
             )
         ),
     ])
-    serializer_class = GroupingSerializer
+    serializer_class = serializers.GroupingSerializer
 
     def get_queryset(self):
         group_id = self.request.query_params.get('gid', None)
@@ -173,7 +239,7 @@ class SubGroup(generics.ListAPIView):
     """
     Return a list of subgroups for a group
     """
-    serializer_class = SubGroupingSerializer
+    serializer_class = serializers.SubGroupingSerializer
 
     def get_queryset(self):
         group_id = self.kwargs['gid']
@@ -210,7 +276,7 @@ class SubGroupIndicators(generics.ListAPIView):
             )
         )
     ])
-    serializer_class = IndicatorValueSerializer
+    serializer_class = serializers.IndicatorValueSerializer
 
     def get_queryset(self):
         subgroup_id = self.kwargs['gid']
@@ -257,7 +323,7 @@ class MandateView(generics.ListAPIView):
             )
         ),
     ])
-    serializer_class = MandateGroupSerializer
+    serializer_class = serializers.MandateGroupSerializer
 
     def get_queryset(self):
         return Mandategroup.objects.all()
@@ -278,7 +344,7 @@ class MandateDetailView(generics.ListAPIView):
         ),
     ])
 
-    serializer_class = MandateDetailSerializer
+    serializer_class = serializers.MandateDetailSerializer
 
     def get_queryset(self):
         mandate_id = self.kwargs['mgid']
@@ -289,7 +355,7 @@ class YearView(generics.ListAPIView):
     """
     Return all the avaliable years
     """
-    serializer_class = YearSerializer
+    serializer_class = serializers.YearSerializer
 
     def get_queryset(self):
         return Yearref.objects.all()
