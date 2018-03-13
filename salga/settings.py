@@ -102,12 +102,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-if not DEBUG:
-    REST_FRAMEWORK = {
-        'DEFAULT_RENDERER_CLASSES': (
-            'rest_framework.renderers.JSONRenderer',
-        )
-    }
+# if not DEBUG:
+#     REST_FRAMEWORK = {
+#         'DEFAULT_RENDERER_CLASSES': (
+#             'rest_framework.renderers.JSONRenderer',
+#         )
+#     }
 
 
 if not DEBUG:
