@@ -71,7 +71,6 @@ class GovernmentDetailView(generics.ListAPIView):
 
 class CategoryIndicatorOverallRankView(generics.ListAPIView):
     """
-
     Return Overall indicator rankings for all the governments within a
     particular government category
     """
@@ -95,17 +94,20 @@ class CategoryIndicatorOverallRankView(generics.ListAPIView):
             return Govindicatorrank.objects.filter(
                 govid__gcid=cat_id,
                 yearid__yr=year
-            ).order_by('ranking').select_related('govid')
+            ).select_related('govid', 'iid').only('ranking', 'score',
+                                                  'iid__name',
+                                                  'govid__name')
         latest_year = Yearref.objects.latest('yearid')
         return Govindicatorrank.objects.filter(
             govid__gcid=cat_id,
             yearid=latest_year
-        ).order_by('ranking').select_related('govid')
+        ).select_related('govid', 'iid').only('ranking', 'score',
+                                              'iid__name',
+                                              'govid__name')
 
 
 class GovernmentIndicatorRankingView(generics.ListAPIView):
     """
-
     Return performance indicator rankings for a particular government.
     """
     schema = AutoSchema(manual_fields=[
@@ -141,10 +143,8 @@ class GovernmentIndicatorRankingView(generics.ListAPIView):
 
 class GovernmentOverrallRankingView(generics.ListAPIView):
     """
-
     Return government rankings based on the mandate scores for a particular
     government category
-
     """
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
