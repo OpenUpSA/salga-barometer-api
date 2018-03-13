@@ -306,7 +306,7 @@ class SubGroupIndicators(generics.ListAPIView):
                     .objects\
                     .only('value', 'iid__name', 'iid__parentgid__name')\
                     .filter(govid=gov_id,
-                            yearid__yr=latest_year,
+                            yearid=latest_year,
                             iid__parentgid__parentgid=subgroup_id,
                             iid__parentgid__name__startswith=indicator
                     )\
@@ -316,7 +316,7 @@ class SubGroupIndicators(generics.ListAPIView):
                 .only('value', 'iid__name', 'iid__parentgid__name')\
                 .filter(
                     govid__name=gov_id,
-                    yearid__yr=latest_year,
+                    yearid=latest_year,
                     iid__parentgid=subgroup_id,
                     iid__name__startswith=indicator
                 )\
