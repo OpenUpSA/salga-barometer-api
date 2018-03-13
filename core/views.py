@@ -4,7 +4,7 @@ from rest_framework import generics
 from rest_framework.schemas import AutoSchema
 from rest_framework.exceptions import NotFound
 
-from .exceptions import TooManyResultsException
+from .exceptions import TooManyResultsException, NotEnoughParameters
 
 from .models import (Govcat, Gov,
                      Govindicatorrank, Indicator,
@@ -239,6 +239,16 @@ class SubGroup(generics.ListAPIView):
     """
     Return a list of subgroups for a group
     """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'gid',
+            required=True,
+            location='path',
+            schema=coreschema.String(
+                description='Unique group identifier'
+            )
+        ),
+    ])
     serializer_class = serializers.SubGroupingSerializer
 
     def get_queryset(self):
@@ -274,6 +284,14 @@ class SubGroupIndicators(generics.ListAPIView):
             schema=coreschema.String(
                 description='Unique identifier for a subgroup'
             )
+        ),
+        coreapi.Field(
+            'indicator',
+            required=True,
+            location='query',
+            schema=coreschema.String(
+                description='Indicator Name for particular subgroup'
+            )
         )
     ])
     serializer_class = serializers.IndicatorValueSerializer
@@ -281,21 +299,24 @@ class SubGroupIndicators(generics.ListAPIView):
     def get_queryset(self):
         subgroup_id = self.kwargs['gid']
         gov_id = self.request.query_params.get('gov', None)
-        year = self.request.query_params.get('year', None)
-        if gov_id is None or year is None:
-            raise TooManyResultsException()
+        # year = self.request.query_params.get('year', None)
+        indicator = self.request.query_params.get('indicator', None)
+        if gov_id is None or indicator is None:
+            raise NotEnoughParameters()
         else:
             indi_exists = Indicator\
                      .objects\
                      .filter(parentgid=subgroup_id)\
                      .exists()
+            latest_year = Yearref.objects.latest('yearid')
             if not indi_exists:
                 return Govindicator\
                     .objects\
                     .only('value', 'iid__name', 'iid__parentgid__name')\
                     .filter(govid=gov_id,
-                            yearid__yr=year,
-                            iid__parentgid__parentgid=subgroup_id
+                            yearid__yr=latest_year,
+                            iid__parentgid__parentgid=subgroup_id,
+                            iid__parentgid__name__startswith=indicator
                     )\
                     .select_related('iid')
             return Govindicator\
@@ -303,8 +324,9 @@ class SubGroupIndicators(generics.ListAPIView):
                 .only('value', 'iid__name', 'iid__parentgid__name')\
                 .filter(
                     govid__name=gov_id,
-                    yearid__yr=year,
-                    iid__parentgid=subgroup_id
+                    yearid__yr=latest_year,
+                    iid__parentgid=subgroup_id,
+                    iid__name__startswith=indicator
                 )\
                 .select_related('iid')
 
