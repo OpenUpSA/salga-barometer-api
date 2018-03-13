@@ -1,11 +1,7 @@
-from .models import (Govcat,
-                     Gov, Govindicatorrank,
-                     Indicator, Grouping,
-                     Mandategroup, Govrank,
-                     Govindicator, Yearref)
-
 from rest_framework import serializers
 from rest_framework.reverse import reverse
+
+from . import models
 
 
 class GovernmentMandateLink(serializers.HyperlinkedIdentityField):
@@ -27,7 +23,7 @@ class GroupingSerializer(serializers.ModelSerializer):
     grouping_set = serializers.StringRelatedField(many=True)
 
     class Meta:
-        model = Grouping
+        model = models.Grouping
         fields = ('gid', 'name', 'subgroup_link', 'grouping_set')
 
 
@@ -37,7 +33,7 @@ class CategorySerializer(serializers.HyperlinkedModelSerializer):
         lookup_field='gcid')
 
     class Meta:
-        model = Govcat
+        model = models.Govcat
         fields = ('gcid', 'description', 'link')
 
 
@@ -46,7 +42,7 @@ class GovernmentMandateSerializer(serializers.ModelSerializer):
     indicator = serializers.StringRelatedField(source='iid')
 
     class Meta:
-        model = Govindicator
+        model = models.Govindicator
         fields = ('value', 'year', 'indicator')
 
 
@@ -61,7 +57,7 @@ class GovernmentDetailSerializer(serializers.ModelSerializer):
     group_url = GroupingSerializer(read_only=True, many=True)
 
     class Meta:
-        model = Gov
+        model = models.Gov
         fields = ('govid', 'name', 'code', 'mdbcode', 'indicator_rank_url',
                   'government_rank_url', 'group_url')
 
@@ -73,8 +69,27 @@ class CategoryDescriptionSerializer(serializers.ModelSerializer):
     gov_set = GovernmentDetailSerializer(many=True, read_only=True)
 
     class Meta:
-        model = Govcat
+        model = models.Govcat
         fields = ('gcid', 'description', 'gov_set')
+
+
+class CategoryOverallRankingSerializer(serializers.ModelSerializer):
+    government = serializers.StringRelatedField(source='govid')
+    idp_score = serializers.StringRelatedField(source='idpscore')
+    service_del_score = serializers.StringRelatedField(
+        source='servicedelscore')
+    finance_score = serializers.StringRelatedField(source='financescore')
+    hr_score = serializers.StringRelatedField(source='hrscore')
+    combined_score = serializers.StringRelatedField(source='combinedscore')
+    gov_score = serializers.StringRelatedField(source='govscore')
+    year = serializers.StringRelatedField(source='yearid')
+
+    class Meta:
+        model = models.Govrank
+        fields = ('government', 'ranking', 'idp_score',
+                  'service_del_score', 'finance_score',
+                  'hr_score', 'gov_score',
+                  'combined_score', 'year')
 
 
 class GovernmentRankingSerializer(serializers.ModelSerializer):
@@ -88,7 +103,7 @@ class GovernmentRankingSerializer(serializers.ModelSerializer):
     gov_score = serializers.StringRelatedField(source='govscore')
 
     class Meta:
-        model = Govrank
+        model = models.Govrank
         fields = ('ranking', 'idp_score', 'service_del_score', 'finance_score',
                   'hr_score', 'gov_score', 'combined_score', 'year')
 
@@ -99,8 +114,40 @@ class GovernmentIndicatorSerializer(serializers.ModelSerializer):
     unit = serializers.StringRelatedField(source='iid.unitid.unit')
 
     class Meta:
-        model = Govindicator
+        model = models.Govindicator
         fields = ('value', 'name', 'year', 'unit')
+
+
+class CategoryIndicatorListSerializer(serializers.ListSerializer):
+    def to_representation(self, instance):
+        gov_name_group = set([gov_name.govid.name for gov_name in instance])
+        groups = {}
+        for gov_name in gov_name_group:
+            indicator_results = []
+            for obj in instance:
+                if obj.govid.name == gov_name:
+                    indicator_results.append(
+                        {
+                            'Ranking': obj.ranking,
+                            'Score': obj.score,
+                            'Indicator': obj.iid.name
+                        }
+                    )
+            groups[gov_name] = indicator_results
+        return [
+            groups
+        ]
+
+
+class CategoryIndicatorRankSerializer(serializers.ModelSerializer):
+    government = serializers.StringRelatedField(source='govid')
+    indicator = serializers.StringRelatedField(source='iid')
+    year = serializers.StringRelatedField(source='yearid')
+
+    class Meta:
+        list_serializer_class = CategoryIndicatorListSerializer
+        model = models.Govindicatorrank
+        fields = ('government', 'indicator', 'ranking', 'score', 'year')
 
 
 class IndicatorRankSerializer(serializers.ModelSerializer):
@@ -108,7 +155,7 @@ class IndicatorRankSerializer(serializers.ModelSerializer):
     year = serializers.StringRelatedField(source='yearid')
 
     class Meta:
-        model = Govindicatorrank
+        model = models.Govindicatorrank
         fields = ('indicator', 'ranking', 'score', 'year')
 
 
@@ -117,7 +164,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
     group = serializers.StringRelatedField(source='parentgid')
 
     class Meta:
-        model = Indicator
+        model = models.Indicator
         fields = ('name', 'code', 'group', 'unit')
 
 
@@ -128,13 +175,13 @@ class GroupingSerializer(serializers.ModelSerializer):
     grouping_set = serializers.StringRelatedField(many=True)
 
     class Meta:
-        model = Grouping
+        model = models.Grouping
         fields = ('gid', 'name', 'subgroup_link', 'grouping_set')
 
 
 class SubGroupHyperLink(serializers.HyperlinkedRelatedField):
     view_name = 'api:subgroup_indicators'
-    queryset = Grouping.objects.all()
+    queryset = models.Grouping.objects.all()
 
     def get_url(self, obj, view_name, request, format):
         url_kwargs = {
@@ -153,7 +200,7 @@ class SubGroupingSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Grouping
+        model = models.Grouping
         fields = ('gid', 'name', 'subgroup_url')
 
 
@@ -182,7 +229,7 @@ class IndicatorValueSerializer(serializers.Serializer):
 
     class Meta:
         list_serializer_class = IndicatorListSerializer
-        model = Govindicator
+        model = models.Govindicator
         fields = ('value', 'name', 'group')
 
 
@@ -193,19 +240,19 @@ class MandateGroupSerializer(serializers.ModelSerializer):
     indicator_set = serializers.StringRelatedField(many=True)
 
     class Meta:
-        model = Mandategroup
+        model = models.Mandategroup
         fields = ('mgid', 'name', 'indicator_link', 'indicator_set')
 
 
 class MandateDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Indicator
+        model = models.Indicator
         fields = ('iid', 'name', 'code', 'scale')
 
 
 class YearSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Yearref
+        model = models.Yearref
         fields = ('yearid', 'yr')
