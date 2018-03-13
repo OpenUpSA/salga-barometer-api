@@ -270,14 +270,6 @@ class SubGroupIndicators(generics.ListAPIView):
             )
         ),
         coreapi.Field(
-            'year',
-            required=True,
-            location='query',
-            schema=coreschema.String(
-                description='full year of ranking eg: 2016'
-            )
-        ),
-        coreapi.Field(
             'gid',
             required=True,
             location='query',
