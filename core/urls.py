@@ -19,15 +19,19 @@ urlpatterns = [
         name='government_detail'),
 
     # Rankings
-    url(r'^rankings/indicators/(?P<govid>[\d]+)$',
+    url(r'^rankings/indicators/categories/(?P<cat_id>[\d+])$',
+        views.CategoryIndicatorOverallRankView.as_view(),
+        name='rankings_category_indicator'),
+    url(r'^rankings/indicators/governments/(?P<govid>[\d]+)$',
         cache_page(600)(views.GovernmentIndicatorRankingView.as_view()),
         name='rankings_indicator'),
+    url(r'^rankings/mandates/categories/(?P<cat_id>[\d]+)$',
+        cache_page(600)(views.GovernmentOverrallRankingView.as_view()),
+        name='rankings_category_government'),
     url(r'^rankings/governments/(?P<govid>[\d]+)$',
         cache_page(600)(views.GovernmentRankingView.as_view()),
         name='rankings_government'),
 
-    # url(r'^indicators$', views.Indicators.as_view(),
-    #     name='indicator'),
     url(r'^mandate$',
         cache_page(600)(views.MandateView.as_view()),
         name='mandate'),
