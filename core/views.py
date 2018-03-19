@@ -3,8 +3,11 @@ import coreschema
 from rest_framework import generics
 from rest_framework.schemas import AutoSchema
 from rest_framework.exceptions import NotFound
+from rest_framework.decorators import api_view, schema as sch
+from rest_framework.response import Response
 
 from .exceptions import TooManyResultsException, NotEnoughParameters
+from . import averages
 
 from .models import (Govcat, Gov,
                      Govindicatorrank, Indicator,
@@ -48,11 +51,8 @@ class CategoryDescriptionView(generics.ListAPIView):
         return Govcat.objects.filter(gcid=gcid)
 
 
-class GovernmentDetailView(generics.ListAPIView):
-    """
-    Return details about a particular government.
-    """
-    schema = AutoSchema(manual_fields=[
+@api_view(['GET'])
+@sch(AutoSchema(manual_fields=[
         coreapi.Field(
             'govid',
             required=True,
@@ -61,12 +61,49 @@ class GovernmentDetailView(generics.ListAPIView):
                 description='Unique identifier for a gorvernment'
             )
         ),
-    ])
-    serializer_class = serializers.GovernmentDetailSerializer
+    ]))
+def government_detail(request, govid):
+    """
+    Return overview details about a government
+    """
+    latest_year = Yearref.objects.latest('yearid')
+    government = Gov.objects.get(govid=govid)
+    serialize = serializers.GovernmentDetailSerializer(government,
+                                                       context={'request': request})
 
-    def get_queryset(self):
-        govid = self.kwargs['govid']
-        return Gov.objects.filter(govid=govid)
+    population = Govindicator\
+                         .objects\
+                         .only('iid__name', 'value')\
+                         .filter(
+                             govid=govid,
+                             iid__parentgid=1116,
+                             yearid=latest_year
+                         )\
+
+    household = Govindicator\
+                        .objects\
+                        .only('iid__name', 'value')\
+                        .filter(
+                            govid=govid,
+                            iid__parentgid=1119,
+                            yearid=latest_year
+                        )\
+
+    pop_density, total_population, area = averages.density(population)
+    house_density, _, _ = averages.density(household)
+
+    return Response(
+        {
+            'Details': serialize.data,
+            'Overview': {
+                'Households/km': house_density,
+                'People/km': pop_density,
+                'Population': total_population,
+                'Area': area,
+            },
+
+        }
+    )
 
 
 class CategoryIndicatorOverallRankView(generics.ListAPIView):
@@ -272,14 +309,14 @@ class SubGroupIndicators(generics.ListAPIView):
         coreapi.Field(
             'gid',
             required=True,
-            location='query',
+            location='path',
             schema=coreschema.String(
                 description='Unique identifier for a subgroup'
             )
         ),
         coreapi.Field(
             'indicator',
-            required=True,
+            required=False,
             location='query',
             schema=coreschema.String(
                 description='Indicator Name for particular subgroup'
@@ -291,16 +328,37 @@ class SubGroupIndicators(generics.ListAPIView):
     def get_queryset(self):
         subgroup_id = self.kwargs['gid']
         gov_id = self.request.query_params.get('gov', None)
-        # year = self.request.query_params.get('year', None)
         indicator = self.request.query_params.get('indicator', None)
-        if gov_id is None or indicator is None:
-            raise NotEnoughParameters()
-        else:
-            indi_exists = Indicator\
+
+        latest_year = Yearref.objects.latest('yearid')
+        indi_exists = Indicator\
                      .objects\
                      .filter(parentgid=subgroup_id)\
                      .exists()
-            latest_year = Yearref.objects.latest('yearid')
+
+        if gov_id is None:
+            raise NotEnoughParameters()
+        if indicator is None:
+            if not indi_exists:
+                return Govindicator\
+                    .objects\
+                    .only('value', 'iid__name', 'iid__parentgid__name')\
+                    .filter(govid=gov_id,
+                            yearid=latest_year,
+                            iid__parentgid__parentgid=subgroup_id
+                    )\
+                    .select_related('iid')
+            else:
+                return Govindicator\
+                    .objects\
+                    .only('value', 'iid__name', 'iid__parentgid__name')\
+                    .filter(
+                        govid=gov_id,
+                        yearid=latest_year,
+                        iid__parentgid=subgroup_id,
+                    )\
+                    .select_related('iid')
+        else:
             if not indi_exists:
                 return Govindicator\
                     .objects\
@@ -315,7 +373,7 @@ class SubGroupIndicators(generics.ListAPIView):
                 .objects\
                 .only('value', 'iid__name', 'iid__parentgid__name')\
                 .filter(
-                    govid__name=gov_id,
+                    govid=gov_id,
                     yearid=latest_year,
                     iid__parentgid=subgroup_id,
                     iid__name__startswith=indicator

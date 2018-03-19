@@ -15,7 +15,7 @@ urlpatterns = [
         name='category_description'),
 
     url(r'^governments/(?P<govid>[\d]+)$',
-        cache_page(600)(views.GovernmentDetailView.as_view()),
+        cache_page(600)(views.government_detail),
         name='government_detail'),
 
     # Rankings
