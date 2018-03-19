@@ -54,12 +54,11 @@ class GovernmentDetailSerializer(serializers.ModelSerializer):
         view_name='api:rankings_government',
         lookup_field='govid'
     )
-    group_url = GroupingSerializer(read_only=True, many=True)
 
     class Meta:
         model = models.Gov
         fields = ('govid', 'name', 'code', 'mdbcode', 'indicator_rank_url',
-                  'government_rank_url', 'group_url')
+                  'government_rank_url')
 
 
 class CategoryDescriptionSerializer(serializers.ModelSerializer):
@@ -179,18 +178,18 @@ class GroupingSerializer(serializers.ModelSerializer):
         fields = ('gid', 'name', 'subgroup_link', 'grouping_set')
 
 
-class SubGroupHyperLink(serializers.HyperlinkedRelatedField):
-    view_name = 'api:subgroup_indicators'
-    queryset = models.Grouping.objects.all()
+# class SubGroupHyperLink(serializers.HyperlinkedRelatedField):
+#     view_name = 'api:subgroup_indicators'
+#     queryset = models.Grouping.objects.all()
 
-    def get_url(self, obj, view_name, request, format):
-        url_kwargs = {
-            'group': obj.pk,
-            'subgroup': obj.pk
-        }
+#     def get_url(self, obj, view_name, request, format):
+#         url_kwargs = {
+#             'group': obj.pk,
+#             'subgroup': obj.pk
+#         }
 
-        return reverse(view_name, kwargs=url_kwargs,
-                       request=request, format=format)
+#         return reverse(view_name, kwargs=url_kwargs,
+#                        request=request, format=format)
 
 
 class SubGroupingSerializer(serializers.ModelSerializer):
