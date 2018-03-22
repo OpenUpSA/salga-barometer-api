@@ -4,23 +4,40 @@ from rest_framework.reverse import reverse
 from . import models
 
 
-class GovernmentMandateLink(serializers.HyperlinkedIdentityField):
+# class GovernmentMandateLink(serializers.HyperlinkedIdentityField):
 
-    def get_url(self, obj, view_name, request, format):
-        print(type(obj))
-        url_kwargs = {
-            'govid': obj.govid,
-            'mandate':  obj.govindicator_set.iid__mgid
-        }
-        return reverse(view_name, kwargs=url_kwargs,
-                       request=request, format=format)
+#     def get_url(self, obj, view_name, request, format):
+#         print(type(obj))
+#         url_kwargs = {
+#             'govid': obj.govid,
+#             'mandate':  obj.govindicator_set.iid__mgid
+#         }
+#         return reverse(view_name, kwargs=url_kwargs,
+#                        request=request, format=format)
+
+class SubGroupingSerializer(serializers.ModelSerializer):
+    subgroup_url = serializers.HyperlinkedIdentityField(
+        view_name="api:subgroup_indicators",
+        lookup_field='gid'
+    )
+
+    class Meta:
+        model = models.Grouping
+        fields = ('gid', 'name', 'subgroup_url')
+
+
+# class SubGroupIndicatorSerializer(serializers.ModelSerializer):
+    
+#     class Meta:
+#         model = models.Grouping
+#         fields = ('gid', 'name')
 
 
 class GroupingSerializer(serializers.ModelSerializer):
     subgroup_link = serializers.HyperlinkedIdentityField(
         view_name='api:sub_group',
         lookup_field='gid')
-    grouping_set = serializers.StringRelatedField(many=True)
+    grouping_set = SubGroupingSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.Grouping
@@ -47,6 +64,9 @@ class GovernmentMandateSerializer(serializers.ModelSerializer):
 
 
 class GovernmentDetailSerializer(serializers.ModelSerializer):
+    government_url = serializers.HyperlinkedIdentityField(
+        view_name='api:government_detail',
+        lookup_field='govid')
     indicator_rank_url = serializers.HyperlinkedIdentityField(
         view_name='api:rankings_indicator',
         lookup_field='govid')
@@ -57,8 +77,8 @@ class GovernmentDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Gov
-        fields = ('govid', 'name', 'code', 'mdbcode', 'indicator_rank_url',
-                  'government_rank_url')
+        fields = ('govid', 'name', 'code', 'mdbcode', 'government_url',
+                  'indicator_rank_url', 'government_rank_url')
 
 
 class CategoryDescriptionSerializer(serializers.ModelSerializer):
@@ -167,15 +187,15 @@ class IndicatorSerializer(serializers.ModelSerializer):
         fields = ('name', 'code', 'group', 'unit')
 
 
-class GroupingSerializer(serializers.ModelSerializer):
-    subgroup_link = serializers.HyperlinkedIdentityField(
-        view_name='api:sub_group',
-        lookup_field='gid')
-    grouping_set = serializers.StringRelatedField(many=True)
+# class GroupingSerializer(serializers.ModelSerializer):
+#     subgroup_link = serializers.HyperlinkedIdentityField(
+#         view_name='api:sub_group',
+#         lookup_field='gid')
+#     grouping_set = serializers.StringRelatedField(many=True)
 
-    class Meta:
-        model = models.Grouping
-        fields = ('gid', 'name', 'subgroup_link', 'grouping_set')
+#     class Meta:
+#         model = models.Grouping
+#         fields = ('gid', 'name', 'subgroup_link', 'grouping_set')
 
 
 # class SubGroupHyperLink(serializers.HyperlinkedRelatedField):
@@ -190,17 +210,6 @@ class GroupingSerializer(serializers.ModelSerializer):
 
 #         return reverse(view_name, kwargs=url_kwargs,
 #                        request=request, format=format)
-
-
-class SubGroupingSerializer(serializers.ModelSerializer):
-    subgroup_url = serializers.HyperlinkedIdentityField(
-        view_name="api:subgroup_indicators",
-        lookup_field='gid'
-    )
-
-    class Meta:
-        model = models.Grouping
-        fields = ('gid', 'name', 'subgroup_url')
 
 
 class IndicatorListSerializer(serializers.ListSerializer):

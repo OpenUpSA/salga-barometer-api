@@ -14,9 +14,15 @@ urlpatterns = [
         cache_page(600)(views.CategoryDescriptionView.as_view()),
         name='category_description'),
 
+    url(r'^governments$',
+        cache_page(600)(views.GovernmentsView.as_view()),
+        name='government'),
     url(r'^governments/(?P<govid>[\d]+)$',
         cache_page(600)(views.government_detail),
         name='government_detail'),
+    url(r'governments/indicators/(?P<govid>[\d]+)$',
+        cache_page(600)(views.GovernmentIndicatorView.as_view()),
+        name='government_indicators'),
 
     # Rankings
     url(r'^rankings/indicators/categories/(?P<cat_id>[\d+])$',
@@ -40,14 +46,17 @@ urlpatterns = [
         name='mandate_detail'),
 
     url(r'^groupings$',
-        cache_page(600)(views.Group.as_view()),
+        cache_page(600)(views.GroupView.as_view()),
         name='grouping'),
     url(r'^groupings/(?P<gid>[\d]+)$',
-        cache_page(600)(views.SubGroup.as_view()),
+        cache_page(600)(views.GroupDetailView.as_view()),
         name='sub_group'),
     url(r'^groupings/subgroups/(?P<gid>[\d]+)$',
-        cache_page(600)(views.SubGroupIndicators.as_view()),
+        cache_page(600)(views.SubGroupIndicatorView.as_view()),
         name='subgroup_indicators'),
+    # url(r'^groupings/subgroups/indicators/(?P<gid>[\d]+)$',
+    #     cache_page(600)(views.SubGroupIndicatorView.as_view()),
+    #     name='indicator_subgroups'),
     url(r'^years$',
         cache_page(600)(views.YearView.as_view()),
         name='year')
