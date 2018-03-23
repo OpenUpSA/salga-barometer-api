@@ -144,30 +144,31 @@ class CategoryIndicatorOverallRankView(generics.ListAPIView):
                 description='Unique identifier for a gorvernment category'
             )
         ),
+        coreapi.Field(
+            'year',
+            required=True,
+            location='query',
+            schema=coreschema.String(
+                description='full year of ranking eg 2016'
+            )
+        ),
     ])
 
     serializer_class = serializers.CategoryIndicatorRankSerializer
 
     def get_queryset(self):
         cat_id = self.kwargs['cat_id']
-        year = self.request.query_params.get('year', None)
-        if year is not None:
-            return Govindicatorrank.objects.filter(
+        year = self.request.query_params.get(
+            'year',
+            Yearref.objects.latest('yearid').yr
+        )
+        return Govindicatorrank.objects.filter(
                 govid__gcid=cat_id,
                 yearid__yr=year
             ).select_related('govid', 'iid').only('ranking', 'score',
                                                   'iid__name',
                                                   'govid__name',
                                                   'iid__short_name')
-        latest_year = Yearref.objects.latest('yearid')
-        return Govindicatorrank.objects.filter(
-            govid__gcid=cat_id,
-            yearid=latest_year
-        ).select_related('govid', 'iid').only('ranking', 'score',
-                                              'iid__name',
-                                              'govid__name',
-                                              'iid__short_name')
-
 
 class GovernmentIndicatorRankingView(generics.ListAPIView):
     """
