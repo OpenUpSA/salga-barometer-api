@@ -1,19 +1,8 @@
 from rest_framework import serializers
-from rest_framework.reverse import reverse
+
 
 from . import models
 
-
-# class GovernmentMandateLink(serializers.HyperlinkedIdentityField):
-
-#     def get_url(self, obj, view_name, request, format):
-#         print(type(obj))
-#         url_kwargs = {
-#             'govid': obj.govid,
-#             'mandate':  obj.govindicator_set.iid__mgid
-#         }
-#         return reverse(view_name, kwargs=url_kwargs,
-#                        request=request, format=format)
 
 class SubGroupingSerializer(serializers.ModelSerializer):
     subgroup_url = serializers.HyperlinkedIdentityField(
@@ -24,13 +13,6 @@ class SubGroupingSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Grouping
         fields = ('gid', 'name', 'subgroup_url')
-
-
-# class SubGroupIndicatorSerializer(serializers.ModelSerializer):
-    
-#     class Meta:
-#         model = models.Grouping
-#         fields = ('gid', 'name')
 
 
 class GroupingSerializer(serializers.ModelSerializer):
@@ -131,10 +113,11 @@ class GovernmentIndicatorSerializer(serializers.ModelSerializer):
     name = serializers.StringRelatedField(source='iid')
     year = serializers.StringRelatedField(source='yearid')
     unit = serializers.StringRelatedField(source='iid.unitid.unit')
+    short_name = serializers.StringRelatedField(source='iid.short_name')
 
     class Meta:
         model = models.Govindicator
-        fields = ('value', 'name', 'year', 'unit')
+        fields = ('value', 'name', 'year', 'unit', 'short_name')
 
 
 class CategoryIndicatorListSerializer(serializers.ListSerializer):
@@ -149,7 +132,8 @@ class CategoryIndicatorListSerializer(serializers.ListSerializer):
                         {
                             'Ranking': obj.ranking,
                             'Score': obj.score,
-                            'Indicator': obj.iid.name
+                            'Indicator': obj.iid.name,
+                            'Short_Name': obj.iid.short_name
                         }
                     )
             groups[gov_name] = indicator_results
@@ -184,32 +168,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Indicator
-        fields = ('name', 'code', 'group', 'unit')
-
-
-# class GroupingSerializer(serializers.ModelSerializer):
-#     subgroup_link = serializers.HyperlinkedIdentityField(
-#         view_name='api:sub_group',
-#         lookup_field='gid')
-#     grouping_set = serializers.StringRelatedField(many=True)
-
-#     class Meta:
-#         model = models.Grouping
-#         fields = ('gid', 'name', 'subgroup_link', 'grouping_set')
-
-
-# class SubGroupHyperLink(serializers.HyperlinkedRelatedField):
-#     view_name = 'api:subgroup_indicators'
-#     queryset = models.Grouping.objects.all()
-
-#     def get_url(self, obj, view_name, request, format):
-#         url_kwargs = {
-#             'group': obj.pk,
-#             'subgroup': obj.pk
-#         }
-
-#         return reverse(view_name, kwargs=url_kwargs,
-#                        request=request, format=format)
+        fields = ('name', 'code', 'group', 'unit', 'short_name')
 
 
 class IndicatorListSerializer(serializers.ListSerializer):
@@ -223,7 +182,8 @@ class IndicatorListSerializer(serializers.ListSerializer):
                     indicator_results.append(
                         {
                             'name': indi.iid.name,
-                            'value': indi.value
+                            'value': indi.value,
+                            'short_name': indi.iid.short_name
                         }
                     )
             groups[group.rstrip()] = indicator_results
@@ -234,11 +194,12 @@ class IndicatorListSerializer(serializers.ListSerializer):
 
 class IndicatorValueSerializer(serializers.Serializer):
     name = serializers.StringRelatedField(source='iid.name')
+    short_name = serializers.StringRelatedField(source='iid.short_name')
 
     class Meta:
         list_serializer_class = IndicatorListSerializer
         model = models.Govindicator
-        fields = ('value', 'name', 'group')
+        fields = ('value', 'name', 'group', 'short_name')
 
 
 class MandateGroupSerializer(serializers.ModelSerializer):
@@ -256,7 +217,7 @@ class MandateDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Indicator
-        fields = ('iid', 'name', 'code', 'scale')
+        fields = ('iid', 'name', 'code', 'scale', 'short_name')
 
 
 class YearSerializer(serializers.ModelSerializer):

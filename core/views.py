@@ -96,7 +96,7 @@ def government_detail(request, govid):
 
     population = Govindicator\
                          .objects\
-                         .only('iid__name', 'value')\
+                         .only('iid__name', 'value', 'iid__short_name')\
                          .filter(
                              govid=govid,
                              iid__parentgid=1116,
@@ -105,7 +105,7 @@ def government_detail(request, govid):
 
     household = Govindicator\
                         .objects\
-                        .only('iid__name', 'value')\
+                        .only('iid__name', 'value', 'iid__short_name')\
                         .filter(
                             govid=govid,
                             iid__parentgid=1119,
@@ -157,14 +157,16 @@ class CategoryIndicatorOverallRankView(generics.ListAPIView):
                 yearid__yr=year
             ).select_related('govid', 'iid').only('ranking', 'score',
                                                   'iid__name',
-                                                  'govid__name')
+                                                  'govid__name',
+                                                  'iid__short_name')
         latest_year = Yearref.objects.latest('yearid')
         return Govindicatorrank.objects.filter(
             govid__gcid=cat_id,
             yearid=latest_year
         ).select_related('govid', 'iid').only('ranking', 'score',
                                               'iid__name',
-                                              'govid__name')
+                                              'govid__name',
+                                              'iid__short_name')
 
 
 class GovernmentIndicatorRankingView(generics.ListAPIView):
@@ -408,7 +410,8 @@ class GovernmentIndicatorView(generics.ListAPIView):
         elif subgroup:
             return Govindicator\
                 .objects\
-                .only('value', 'iid__name', 'iid__parentgid__name')\
+                .only('value', 'iid__name', 'iid__parentgid__name',
+                      'iid__short_name')\
                 .filter(
                     govid=govid,
                     yearid__yr=year,

@@ -145,6 +145,7 @@ class Indicator(models.Model):
     iid = models.AutoField(db_column='IID', primary_key=True)
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True, null=True)
+    short_name = models.CharField(max_length=255, blank=True, null=True)
     parentgid = models.ForeignKey(Grouping, models.DO_NOTHING,
                                   db_column='parentGID', blank=True, null=True)
     unitid = models.ForeignKey('Unit', models.DO_NOTHING, db_column='unitID')
