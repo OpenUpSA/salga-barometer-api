@@ -71,7 +71,7 @@ class CategoryDescriptionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Govcat
-        fields = ('gcid', 'description', 'gov_set')
+        fields = ('gcid', 'description', 'gov_set',)
 
 
 class CategoryOverallRankingSerializer(serializers.ModelSerializer):
@@ -92,6 +92,20 @@ class CategoryOverallRankingSerializer(serializers.ModelSerializer):
                   'hr_score', 'gov_score',
                   'combined_score', 'year')
 
+    def to_representation(self, instance):
+        group = {}
+        group['government'] = instance.govid.name
+        group['data'] = {
+            'idp_score': instance.idpscore,
+            'service_del_score': instance.servicedelscore,
+            'finance_score': instance.financescore,
+            'hr_score': instance.hrscore,
+            'combined_score': instance.combinedscore,
+            'gov_score': instance.govscore,
+            'year': instance.yearid.yr,
+            }
+        return group
+
 
 class GovernmentRankingSerializer(serializers.ModelSerializer):
     year = serializers.StringRelatedField(source='yearid')
@@ -108,6 +122,19 @@ class GovernmentRankingSerializer(serializers.ModelSerializer):
         fields = ('ranking', 'idp_score', 'service_del_score', 'finance_score',
                   'hr_score', 'gov_score', 'combined_score', 'year')
 
+    def to_representation(self, instance):
+        group = {}
+        group['ranking'] = instance.ranking
+        group['data'] = {
+            'idp_score': instance.idpscore,
+            'service_del_score': instance.servicedelscore,
+            'finance_score': instance.financescore,
+            'hr_score': instance.hrscore,
+            'combined_score': instance.combinedscore,
+            'gov_score': instance.govscore,
+            'year': instance.yearid.yr,
+            }
+        return group
 
 class GovernmentIndicatorSerializer(serializers.ModelSerializer):
     name = serializers.StringRelatedField(source='iid')
@@ -123,8 +150,10 @@ class GovernmentIndicatorSerializer(serializers.ModelSerializer):
 class CategoryIndicatorListSerializer(serializers.ListSerializer):
     def to_representation(self, instance):
         gov_name_group = set([gov_name.govid.name for gov_name in instance])
-        groups = {}
+        government_list = []
         for gov_name in gov_name_group:
+            print(gov_name)
+            groups = {}
             indicator_results = []
             for obj in instance:
                 if obj.govid.name == gov_name:
@@ -136,10 +165,10 @@ class CategoryIndicatorListSerializer(serializers.ListSerializer):
                             'Short_Name': obj.iid.short_name
                         }
                     )
-            groups[gov_name] = indicator_results
-        return [
-            groups
-        ]
+            groups['government'] = gov_name
+            groups['data'] = indicator_results
+            government_list.append(groups)
+        return government_list
 
 
 class CategoryIndicatorRankSerializer(serializers.ModelSerializer):
@@ -161,6 +190,16 @@ class IndicatorRankSerializer(serializers.ModelSerializer):
         model = models.Govindicatorrank
         fields = ('indicator', 'ranking', 'score', 'year')
 
+    def to_representation(self, instance):
+        group = {}
+        group['indicator'] = instance.iid.name
+        group['data'] = {
+            'ranking': instance.ranking,
+            'score': instance.score,
+            'year': instance.yearid.yr
+        }
+        return group
+
 
 class IndicatorSerializer(serializers.ModelSerializer):
     unit = serializers.StringRelatedField(source='unitid')
@@ -174,8 +213,9 @@ class IndicatorSerializer(serializers.ModelSerializer):
 class IndicatorListSerializer(serializers.ListSerializer):
     def to_representation(self, instance):
         gov_group = set([x.iid.parentgid.name for x in instance])
-        groups = {}
+        indicator_list = []
         for group in gov_group:
+            indicator_group = {}
             indicator_results = []
             for indi in instance:
                 if indi.iid.parentgid.name == group:
@@ -186,10 +226,13 @@ class IndicatorListSerializer(serializers.ListSerializer):
                             'short_name': indi.iid.short_name
                         }
                     )
-            groups[group.rstrip()] = indicator_results
-        return [
-            groups
-        ]
+            indicator_group = {
+                'name': group.rstrip(),
+                'data': indicator_results
+            }
+            indicator_list.append(indicator_group)
+
+        return indicator_list
 
 
 class IndicatorValueSerializer(serializers.Serializer):
@@ -218,6 +261,17 @@ class MandateDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Indicator
         fields = ('iid', 'name', 'code', 'scale', 'short_name')
+
+    def to_representation(self, instance):
+        group = {}
+        group['name'] = instance.name
+        group['data'] = {
+            'iid': instance.iid,
+            'code': instance.code,
+            'scale': instance.scale,
+            'short_name': instance.short_name
+        }
+        return group
 
 
 class YearSerializer(serializers.ModelSerializer):

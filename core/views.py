@@ -2,11 +2,12 @@ import coreapi
 import coreschema
 from rest_framework import generics
 from rest_framework.schemas import AutoSchema
-from rest_framework.exceptions import NotFound
+from rest_framework import exceptions
 from rest_framework import decorators
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .exceptions import TooManyResultsException, NotEnoughParameters
+from .exceptions import NotEnoughParameters
 from . import averages
 
 from .models import (Govcat, Gov,
@@ -19,17 +20,23 @@ from .models import (Govcat, Gov,
 from . import serializers
 
 
-class CategoryView(generics.ListAPIView):
+class CategoryView(APIView):
     """
     Return a list of all the government categories.
     """
-    serializer_class = serializers.CategorySerializer
+    def get(self, request, format=None):
+        query = Govcat.objects.all()
+        serialize = serializers.CategorySerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+        return Response(
+            {'results': serialize.data}
+        )
 
-    def get_queryset(self):
-        return Govcat.objects.all()
 
-
-class CategoryDescriptionView(generics.ListAPIView):
+class CategoryDescriptionView(APIView):
     """
     Return details about a specific government category
     """
@@ -44,25 +51,38 @@ class CategoryDescriptionView(generics.ListAPIView):
         ),
     ])
 
-    serializer_class = serializers.CategoryDescriptionSerializer
+    def get(self, request, gcid, format=None):
+        query = Govcat.objects.get(gcid=gcid)
+        serialize = serializers.CategoryDescriptionSerializer(
+            query,
+            context={'request': request},
+        )
+        return Response(
+            {'results': serialize.data}
+        )
 
-    def get_queryset(self):
-        gcid = self.kwargs['gcid']
-        return Govcat.objects.filter(gcid=gcid)
 
-
-class GovernmentsView(generics.ListAPIView):
+class GovernmentsView(APIView):
     """
     Return a list of all the governments
     """
-    serializer_class = serializers.GovernmentDetailSerializer
+    def get(self, request, format=None):
+        query = Gov.objects.all()
+        serialize = serializers.GovernmentDetailSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+        return Response(
+            {'results': serialize.data}
+        )
 
-    def get_queryset(self):
-        return Gov.objects.all()
 
-
-@decorators.api_view(['GET'])
-@decorators.schema(AutoSchema(manual_fields=[
+class GovernmentDetailView(APIView):
+    """
+    Return overview details about a government
+    """
+    schema = AutoSchema(manual_fields=[
         coreapi.Field(
             'govid',
             required=True,
@@ -78,282 +98,51 @@ class GovernmentsView(generics.ListAPIView):
                 description='year'
             )
         ),
-    ]))
-def government_detail(request, govid):
-    """
-    Return overview details about a government
-    """
-    year = request.query_params.get(
-        'year',
-        Yearref.objects.latest('yearid').yr
-    )
+    ])
 
-    government = Gov.objects.get(govid=govid)
-    serialize = serializers.GovernmentDetailSerializer(
-        government,
-        context={'request': request}
-    )
-
-    population = Govindicator\
+    def get(self, request, govid):
+        year = request.query_params.get(
+            'year',
+            Yearref.objects.latest('yearid').yr
+        )
+        query = Gov.objects.get(govid=govid)
+        serialize = serializers.GovernmentDetailSerializer(
+            query,
+            context={'request': request}
+        )
+        population = Govindicator\
                          .objects\
                          .only('iid__name', 'value', 'iid__short_name')\
                          .filter(
                              govid=govid,
                              iid__parentgid=1116,
                              yearid__yr=year
-                         )\
+                         )
 
-    household = Govindicator\
-                        .objects\
-                        .only('iid__name', 'value', 'iid__short_name')\
-                        .filter(
+        household = Govindicator\
+                    .objects\
+                    .only('iid__name', 'value', 'iid__short_name')\
+                    .filter(
                             govid=govid,
                             iid__parentgid=1119,
                             yearid__yr=year
-                        )\
+                    )
 
-    pop_density, total_population, area = averages.density(population)
-    house_density, _, _ = averages.density(household)
-
-    return Response(
-        {
-            'Details': serialize.data,
-            'Overview': {
+        pop_density, total_population, area = averages.density(population)
+        house_density, _, _ = averages.density(household)
+        return Response(
+            {'details': serialize.data,
+             'overview': {
                 'Households/km': house_density,
                 'People/km': pop_density,
                 'Population': total_population,
                 'Area': area,
-            },
-            'Year': year
-
-        }
-    )
-
-
-class CategoryIndicatorOverallRankView(generics.ListAPIView):
-    """
-    Return Overall indicator rankings for all the governments within a
-    particular government category
-    """
-    schema = AutoSchema(manual_fields=[
-        coreapi.Field(
-            'cat_id',
-            required=True,
-            location='path',
-            schema=coreschema.String(
-                description='Unique identifier for a gorvernment category'
-            )
-        ),
-        coreapi.Field(
-            'year',
-            required=True,
-            location='query',
-            schema=coreschema.String(
-                description='full year of ranking eg 2016'
-            )
-        ),
-    ])
-
-    serializer_class = serializers.CategoryIndicatorRankSerializer
-
-    def get_queryset(self):
-        cat_id = self.kwargs['cat_id']
-        year = self.request.query_params.get(
-            'year',
-            Yearref.objects.latest('yearid').yr
+             },
+             'year': year}
         )
-        return Govindicatorrank.objects.filter(
-                govid__gcid=cat_id,
-                yearid__yr=year
-            ).select_related('govid', 'iid').only('ranking', 'score',
-                                                  'iid__name',
-                                                  'govid__name',
-                                                  'iid__short_name')
-
-class GovernmentIndicatorRankingView(generics.ListAPIView):
-    """
-    Return performance indicator rankings for a particular government.
-    """
-    schema = AutoSchema(manual_fields=[
-        coreapi.Field(
-            'govid',
-            required=True,
-            location='path',
-            schema=coreschema.String(
-                description='Unique identifier for gorvernment'
-            )
-        ),
-        coreapi.Field(
-            'year',
-            required=False,
-            location='query',
-            schema=coreschema.String(
-                description='full year of ranking eg: 2016'
-            )
-        )
-    ])
-    serializer_class = serializers.IndicatorRankSerializer
-
-    def get_queryset(self):
-        govid = self.kwargs['govid']
-        year = self.request.query_params.get('year', None)
-        if year is not None:
-            return Govindicatorrank.objects.filter(
-                govid_id=govid,
-                yearid__yr=year
-            )
-        return Govindicatorrank.objects.filter(govid_id=govid)
 
 
-class GovernmentOverrallRankingView(generics.ListAPIView):
-    """
-    Return government rankings based on the mandate scores for a particular
-    government category
-    """
-    schema = AutoSchema(manual_fields=[
-        coreapi.Field(
-            'cat_id',
-            required=True,
-            location='path',
-            schema=coreschema.String(
-                description='Unique identifier for a gorvernment category'
-            )
-        ),
-        coreapi.Field(
-            'year',
-            required=False,
-            location='query',
-            schema=coreschema.String(
-                description='full year eg: 2015'
-            )
-        ),
-    ])
-    serializer_class = serializers.CategoryOverallRankingSerializer
-
-    def get_queryset(self):
-        cat_id = self.kwargs['cat_id']
-        year = self.request.query_params.get(
-            'year',
-            Yearref.objects.latest('yearid')
-        )
-        result = Govrank.objects.filter(
-            yearid__yr=year,
-            govid__gcid=cat_id
-        ).order_by('ranking')
-        if not result:
-            raise NotFound
-        return result
-
-
-class GovernmentRankingView(generics.ListAPIView):
-    """
-    Return the mandate scores for a government
-    """
-    schema = AutoSchema(manual_fields=[
-        coreapi.Field(
-            'govid',
-            required=True,
-            location='path',
-            schema=coreschema.String(
-                description='Unique identifier for gorvernment'
-            )
-        ),
-        coreapi.Field(
-            'year',
-            required=False,
-            location='query',
-            schema=coreschema.String(
-                description='full year of ranking eg: 2016'
-            )
-        )
-    ])
-    serializer_class = serializers.GovernmentRankingSerializer
-
-    def get_queryset(self):
-        govid = self.kwargs['govid']
-        year = self.request.query_params.get('year', None)
-        if year is not None:
-            return Govrank.objects.filter(govid_id=govid,
-                                          yearid__yr=year)
-        return Govrank.objects.filter(govid_id=govid)
-
-
-class GroupView(generics.ListAPIView):
-    """
-    Return a list of the top level indicator groupings
-    """
-    serializer_class = serializers.GroupingSerializer
-
-    def get_queryset(self):
-        return Grouping.objects.filter(parentgid__isnull=True)
-
-
-class GroupDetailView(generics.ListAPIView):
-    """
-    Return a list of subgroups for a particular top level group
-    """
-    schema = AutoSchema(manual_fields=[
-        coreapi.Field(
-            'gid',
-            required=True,
-            location='path',
-            schema=coreschema.String(
-                description='Unique top level group identifier'
-            )
-        ),
-    ])
-    serializer_class = serializers.SubGroupingSerializer
-
-    def get_queryset(self):
-        group_id = self.kwargs['gid']
-        return Grouping.objects.filter(parentgid=group_id)
-
-
-class SubGroupIndicatorView(generics.ListAPIView):
-    """
-    Return a list of a subgroups indicators
-    """
-    serializer_class = serializers.GroupingSerializer
-
-    def get_queryset(self):
-        subgroup_id = self.kwargs['gid']
-
-        indi_exists = Indicator\
-                      .objects\
-                      .filter(parentgid=subgroup_id)\
-                      .exists()
-        if indi_exists:
-            return Grouping.objects.filter(gid=subgroup_id)
-        else:
-            return Grouping.objects.filter(parentgid=subgroup_id)
-
-
-@decorators.api_view(['GET'])
-def government_indicators(request, govid):
-    """
-    Return government indicator values
-    """
-    indicators = request.query_params.get('indicator', None)
-    year = request\
-           .query_params\
-           .get('year', Yearref.objects.latest('yearid').yr)
-    if indicators:
-        indi = indicators.split(',')
-        results = Govindicator.objects.filter(
-            govid=govid,
-            yearid__yr=year,
-            iid__parentgid__in=indi
-        )
-        serializer = serializers.GovernmentIndicatorSerializer(
-            results,
-            context={'request': request}
-        )
-    return Response({
-        serializer.data
-    })
-
-
-class GovernmentIndicatorView(generics.ListAPIView):
+class GovernmentIndicatorView(APIView):
     """
     Return government indicator values
     """
@@ -391,25 +180,23 @@ class GovernmentIndicatorView(generics.ListAPIView):
             )
         )
     ])
-    serializer_class = serializers.IndicatorValueSerializer
 
-    def get_queryset(self):
-        govid = self.kwargs['govid']
-        subgroup = self.request.query_params.get('subgroup', None)
-        indicators = self.request.query_params.get('indicator', None)
-        year = self.request.query_params.get(
+    def get(self, request, govid, format=None):
+        subgroup = request.query_params.get('subgroup', None)
+        indicators = request.query_params.get('indicator', None)
+        year = request.query_params.get(
             'year',
             Yearref.objects.latest('yearid').yr
         )
         if indicators:
             indi = indicators.split(',')
-            return Govindicator.objects.filter(
+            query = Govindicator.objects.filter(
                 govid=govid,
                 yearid__yr=year,
                 iid__parentgid__in=indi
             )
         elif subgroup:
-            return Govindicator\
+            query = Govindicator\
                 .objects\
                 .only('value', 'iid__name', 'iid__parentgid__name',
                       'iid__short_name')\
@@ -422,126 +209,424 @@ class GovernmentIndicatorView(generics.ListAPIView):
         else:
             raise NotEnoughParameters()
 
+        serialize = serializers.IndicatorValueSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
 
-# class SubGroupView(generics.ListAPIView):
+        return Response(
+            {
+                'results': serialize.data
+            }
+        )
+
+# class CategoryIndicatorOverallRankView(generics.ListAPIView):
 #     """
-#     Return indicator values of a group for a particular government
+#     Return Overall indicator rankings for all the governments within a
+#     particular government category
 #     """
 #     schema = AutoSchema(manual_fields=[
 #         coreapi.Field(
-#             'gov',
-#             required=True,
-#             location='query',
-#             schema=coreschema.String(
-#                 description='Unique identifier for gorvernment'
-#             )
-#         ),
-#         coreapi.Field(
-#             'gid',
+#             'cat_id',
 #             required=True,
 #             location='path',
 #             schema=coreschema.String(
-#                 description='Unique identifier for a subgroup'
-#             )
-#         ),
-#         coreapi.Field(
-#             'indicator',
-#             required=False,
-#             location='query',
-#             schema=coreschema.String(
-#                 description='Indicator Name for particular subgroup'
+#                 description='Unique identifier for a gorvernment category'
 #             )
 #         ),
 #         coreapi.Field(
 #             'year',
-#             required=False,
+#             required=True,
 #             location='query',
 #             schema=coreschema.String(
-#                 description='Indicator Name for particular subgroup'
+#                 description='full year of ranking eg 2016'
 #             )
-#         )
+#         ),
 #     ])
-#     serializer_class = serializers.IndicatorValueSerializer
+
+#     serializer_class = serializers.CategoryIndicatorRankSerializer
 
 #     def get_queryset(self):
-#         subgroup_id = self.kwargs['gid']
-#         gov_id = self.request.query_params.get('gov', None)
-#         indicator = self.request.query_params.get('indicator', None)
-#         year = self.request\
-#                    .query_params\
-#                    .get('year', Yearref.objects.latest('yearid').yr)
+#         cat_id = self.kwargs['cat_id']
+#         year = self.request.query_params.get(
+#             'year',
+#             Yearref.objects.latest('yearid').yr
+#         )
+#         return Govindicatorrank.objects.filter(
+#                 govid__gcid=cat_id,
+#                 yearid__yr=year
+#             ).select_related('govid', 'iid').only('ranking', 'score',
+#                                                   'iid__name',
+#                                                   'govid__name',
+#                                                   'iid__short_name')
 
-#         indi_exists = Indicator\
-#                       .objects\
-#                       .filter(parentgid=subgroup_id)\
-#                       .exists()
 
-#         if gov_id is None:
-#             raise NotEnoughParameters()
-#         if indicator is None:
-#             if not indi_exists:
-#                 return Govindicator\
-#                     .objects\
-#                     .only('value', 'iid__name', 'iid__parentgid__name')\
-#                     .filter(govid=gov_id,
-#                             yearid__yr=year,
-#                             iid__parentgid__parentgid=subgroup_id
-#                     )\
-#                     .select_related('iid')
-#             else:
-#                 return Govindicator\
-#                     .objects\
-#                     .only('value', 'iid__name', 'iid__parentgid__name')\
-#                     .filter(
-#                         govid=gov_id,
-#                         yearid__yr=year,
-#                         iid__parentgid=subgroup_id,
-#                     )\
-#                     .select_related('iid')
+class CategoryIndicatorOverallRankView(APIView):
+    """
+    Return Overall indicator rankings for all the governments within a
+    particular government category
+    """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'cat_id',
+            required=True,
+            location='path',
+            schema=coreschema.String(
+                description='Unique identifier for a gorvernment category'
+            )
+        ),
+        coreapi.Field(
+            'year',
+            required=False,
+            location='query',
+            schema=coreschema.String(
+                description='full year of ranking eg 2016'
+            )
+        ),
+    ])
+    
+    def get(self, request, cat_id):
+        year = request.query_params.get(
+            'year',
+            Yearref.objects.latest('yearid').yr
+        )
+        query = Govindicatorrank.objects.filter(govid__gcid=cat_id,
+                                                yearid__yr=year)\
+                                        .select_related('govid', 'iid')\
+                                        .only('ranking', 'score',
+                                              'iid__name', 'govid__name',
+                                              'iid__short_name')
+
+        serialize = serializers.CategoryIndicatorRankSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+        return Response(
+            {'results': serialize.data}
+        )
+    
+# def category_indicator_overall_ranking_view(request, cat_id):
+#     """
+#     Return Overall indicator rankings for all the governments within a
+#     particular government category
+#     """
+#     year = request.query_params.get(
+#             'year',
+#             Yearref.objects.latest('yearid').yr
+#         )
+#     query = Govindicatorrank.objects.filter(govid__gcid=cat_id,
+#                                             yearid__yr=year)\
+#                                     .select_related('govid', 'iid')\
+#                                     .only('ranking', 'score',
+#                                           'iid__name', 'govid__name',
+#                                           'iid__short_name')
+#     serialize = serializers.CategoryIndicatorRankSerializer(
+#         query,
+#         context={'request': request},
+#         many=True
+#     )
+#     return Response(
+#         serialize.data
+#     )
+
+
+class GovernmentIndicatorRankingView(APIView):
+    """
+    Return performance indicator rankings for a particular government.
+    """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'govid',
+            required=True,
+            location='path',
+            schema=coreschema.String(
+                description='Unique identifier for gorvernment'
+            )
+        ),
+        coreapi.Field(
+            'year',
+            required=False,
+            location='query',
+            schema=coreschema.String(
+                description='full year of ranking eg: 2016'
+            )
+        )
+    ])
+    
+    def get(self, request, govid):
+        year = self.request.query_params.get(
+            'year', Yearref.objects.latest('yearid').yr
+        )
+        query = Govindicatorrank.objects.filter(
+                govid_id=govid,
+                yearid__yr=year
+            )
+        serialize = serializers.IndicatorRankSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+        return Response(
+            {'results': serialize.data}
+        )
+
+
+class GovernmentMandateRankingView(generics.ListAPIView):
+    """
+    Return government rankings based on the mandate scores for a particular
+    government category
+    """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'cat_id',
+            required=True,
+            location='path',
+            schema=coreschema.String(
+                description='Unique identifier for a gorvernment category'
+            )
+        ),
+        coreapi.Field(
+            'year',
+            required=False,
+            location='query',
+            schema=coreschema.String(
+                description='full year eg: 2015'
+            )
+        ),
+    ])
+
+    def get(self, request, cat_id):
+        year = self.request.query_params.get(
+            'year',
+            Yearref.objects.latest('yearid').yr
+        )
+
+        query = Govrank.objects.filter(
+            yearid__yr=year,
+            govid__gcid=cat_id
+        ).order_by('ranking')
+
+        serialize = serializers.CategoryOverallRankingSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+
+        return Response(
+            {'results': serialize.data}
+        )
+
+
+class GovernmentRankingView(APIView):
+    """
+    Return the mandate scores for a government
+    """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'govid',
+            required=True,
+            location='path',
+            schema=coreschema.String(
+                description='Unique identifier for gorvernment'
+            )
+        ),
+        coreapi.Field(
+            'year',
+            required=False,
+            location='query',
+            schema=coreschema.String(
+                description='full year of ranking eg: 2016'
+            )
+        )
+    ])
+
+    def get(self, request, govid):
+        year = request.query_params.get('year', None)
+        try:
+            if year:
+                int(year)
+                query = Govrank.objects.filter(
+                    govid_id=govid,
+                    yearid__yr=year,
+                )
+            else:
+                query = Govrank.objects.filter(govid_id=govid)
+        except Govrank.DoesNotExist:
+            raise exceptions.NotFound()
+        except ValueError:
+            raise exceptions.ParseError()
+        else:
+            serialize = serializers.GovernmentRankingSerializer(
+                query,
+                context={'request': request},
+                many=True
+            )
+
+            return Response(
+                {'results': serialize.data}
+            )
+
+# def government_ranking_view(request, govid):
+#     """
+#     Return the mandate scores for a government
+#     """
+#     year = request.query_params.get('year', None)
+#     if year is None:
+#         query = Govrank.objects.filter(govid_id=govid)
+#         serialize = serializers.GovernmentRankingSerializer(
+#             query,
+#             context={'request': request},
+#             many=True
+#         )
+#         return Response(
+#             serialize.data
+#         )
+#     else:
+#         try:
+#             int(year)
+#             query = Govrank.objects.get(govid_id=govid,
+#                                         yearid__yr=year)
+#         except Govrank.DoesNotExist:
+#             raise exceptions.NotFound()
+#         except ValueError:
+#             raise exceptions.ParseError()
 #         else:
-#             if not indi_exists:
-#                 return Govindicator\
-#                     .objects\
-#                     .only('value', 'iid__name', 'iid__parentgid__name')\
-#                     .filter(govid=gov_id,
-#                             yearid__yr=year,
-#                             iid__parentgid__parentgid=subgroup_id,
-#                             iid__parentgid__name__startswith=indicator
-#                     )\
-#                     .select_related('iid')
-#             return Govindicator\
-#                 .objects\
-#                 .only('value', 'iid__name', 'iid__parentgid__name')\
-#                 .filter(
-#                     govid=gov_id,
-#                     yearid__yr=year,
-#                     iid__parentgid=subgroup_id,
-#                     iid__name__startswith=indicator
-#                 )\
-#                 .select_related('iid')
+#             serialize = serializers.GovernmentRankingSerializer(
+#                 query,
+#                 context={'request': request}
+#             )
+#             return Response(
+#                 serialize.data
+#             )
 
 
-class MandateView(generics.ListAPIView):
+class GroupView(APIView):
+    """
+    Return a list of the top level indicator groupings
+    """
+    def get(self, request, format=None):
+        query = Grouping.objects.filter(parentgid__isnull=True)
+        serialize = serializers.GroupingSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+
+        return Response(
+            {'results': serialize.data}
+        )
+
+
+class GroupDetailView(APIView):
+    """
+    Return a list of subgroups for a particular top level group
+    """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'gid',
+            required=True,
+            location='path',
+            schema=coreschema.String(
+                description='Unique top level group identifier'
+            )
+        ),
+    ])
+
+    def get(self, request, gid, format=None):
+        query = Grouping.objects.filter(parentgid=gid)
+        serialize = serializers.SubGroupingSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+
+        return Response(
+            {'results': serialize.data}
+        )
+
+
+class SubGroupIndicatorView(APIView):
+    """
+    Return a list of a subgroups indicators
+    """
+    schema = AutoSchema(manual_fields=[
+        coreapi.Field(
+            'gid',
+            required=True,
+            location='path',
+            schema=coreschema.String(
+                description='Unique group identifier'
+            )
+        ),
+    ])
+
+    serializer_class = serializers.GroupingSerializer
+
+    def get(self, request, gid, format=None):
+        indi_exists = Indicator\
+                      .objects\
+                      .filter(parentgid=gid)\
+                      .exists()
+        if indi_exists:
+            query = Grouping.objects.filter(gid=gid)
+        else:
+            query = Grouping.objects.filter(parentgid=gid)
+
+        serialize = serializers.GroupingSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+
+        return Response(
+            {'results': serialize.data}
+        )
+
+
+@decorators.api_view(['GET'])
+def government_indicators(request, govid):
+    """
+    Return government indicator values
+    """
+    indicators = request.query_params.get('indicator', None)
+    year = request\
+           .query_params\
+           .get('year', Yearref.objects.latest('yearid').yr)
+    if indicators:
+        indi = indicators.split(',')
+        results = Govindicator.objects.filter(
+            govid=govid,
+            yearid__yr=year,
+            iid__parentgid__in=indi
+        )
+        serializer = serializers.GovernmentIndicatorSerializer(
+            results,
+            context={'request': request}
+        )
+    return Response({
+        serializer.data
+    })
+
+
+class MandateView(APIView):
     """
     Return a list of mandates
     """
-    # schema = AutoSchema(manual_fields=[
-    #     coreapi.Field(
-    #         'mgid',
-    #         required=True,
-    #         location='path',
-    #         schema=coreschema.String(
-    #             description='Unique mandate identifier'
-    #         )
-    #     ),
-    # ])
-    serializer_class = serializers.MandateGroupSerializer
-
-    def get_queryset(self):
-        return Mandategroup.objects.all()
+    def get(self, request, format=None):
+        query = Mandategroup.objects.all()
+        serialize = serializers.MandateGroupSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+        return Response(
+            {'results': serialize.data}
+        )
 
 
-class MandateDetailView(generics.ListAPIView):
+class MandateDetailView(APIView):
     """
     Return details about a particular mandate
     """
@@ -556,18 +641,30 @@ class MandateDetailView(generics.ListAPIView):
         ),
     ])
 
-    serializer_class = serializers.MandateDetailSerializer
+    def get(self, request, mgid, format=None):
+        query = Indicator.objects.filter(mgid=mgid)
+        serialize = serializers.MandateDetailSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
 
-    def get_queryset(self):
-        mandate_id = self.kwargs['mgid']
-        return Indicator.objects.filter(mgid=mandate_id)
+        return Response(
+            {'results': serialize.data}
+        )
 
 
-class YearView(generics.ListAPIView):
+class YearView(APIView):
     """
     Return all the avaliable years
     """
-    serializer_class = serializers.YearSerializer
-
-    def get_queryset(self):
-        return Yearref.objects.all()
+    def get(self, request, format=None):
+        query = Yearref.objects.all()
+        serialize = serializers.YearSerializer(
+            query,
+            context={'request': request},
+            many=True
+        )
+        return Response(
+            {'results': serialize.data}
+        )
