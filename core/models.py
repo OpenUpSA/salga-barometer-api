@@ -49,6 +49,9 @@ class Govcat(models.Model):
         managed = False
         db_table = 'GovCat'
 
+    def __str__(self):
+        return self.description
+
 
 class Govindicator(models.Model):
     giid = models.AutoField(db_column='GIID', primary_key=True)
