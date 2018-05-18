@@ -221,46 +221,6 @@ class GovernmentIndicatorView(APIView):
             }
         )
 
-# class CategoryIndicatorOverallRankView(generics.ListAPIView):
-#     """
-#     Return Overall indicator rankings for all the governments within a
-#     particular government category
-#     """
-#     schema = AutoSchema(manual_fields=[
-#         coreapi.Field(
-#             'cat_id',
-#             required=True,
-#             location='path',
-#             schema=coreschema.String(
-#                 description='Unique identifier for a gorvernment category'
-#             )
-#         ),
-#         coreapi.Field(
-#             'year',
-#             required=True,
-#             location='query',
-#             schema=coreschema.String(
-#                 description='full year of ranking eg 2016'
-#             )
-#         ),
-#     ])
-
-#     serializer_class = serializers.CategoryIndicatorRankSerializer
-
-#     def get_queryset(self):
-#         cat_id = self.kwargs['cat_id']
-#         year = self.request.query_params.get(
-#             'year',
-#             Yearref.objects.latest('yearid').yr
-#         )
-#         return Govindicatorrank.objects.filter(
-#                 govid__gcid=cat_id,
-#                 yearid__yr=year
-#             ).select_related('govid', 'iid').only('ranking', 'score',
-#                                                   'iid__name',
-#                                                   'govid__name',
-#                                                   'iid__short_name')
-
 
 class CategoryIndicatorOverallRankView(APIView):
     """
@@ -285,7 +245,7 @@ class CategoryIndicatorOverallRankView(APIView):
             )
         ),
     ])
-    
+
     def get(self, request, cat_id):
         year = request.query_params.get(
             'year',
@@ -306,30 +266,6 @@ class CategoryIndicatorOverallRankView(APIView):
         return Response(
             {'results': serialize.data}
         )
-    
-# def category_indicator_overall_ranking_view(request, cat_id):
-#     """
-#     Return Overall indicator rankings for all the governments within a
-#     particular government category
-#     """
-#     year = request.query_params.get(
-#             'year',
-#             Yearref.objects.latest('yearid').yr
-#         )
-#     query = Govindicatorrank.objects.filter(govid__gcid=cat_id,
-#                                             yearid__yr=year)\
-#                                     .select_related('govid', 'iid')\
-#                                     .only('ranking', 'score',
-#                                           'iid__name', 'govid__name',
-#                                           'iid__short_name')
-#     serialize = serializers.CategoryIndicatorRankSerializer(
-#         query,
-#         context={'request': request},
-#         many=True
-#     )
-#     return Response(
-#         serialize.data
-#     )
 
 
 class GovernmentIndicatorRankingView(APIView):
@@ -354,7 +290,7 @@ class GovernmentIndicatorRankingView(APIView):
             )
         )
     ])
-    
+
     def get(self, request, govid):
         year = self.request.query_params.get(
             'year', Yearref.objects.latest('yearid').yr
@@ -368,8 +304,11 @@ class GovernmentIndicatorRankingView(APIView):
             context={'request': request},
             many=True
         )
+        category = Gov.objects.only('gcid').get(govid=govid)
+        ranking_total = Gov.objects.filter(gcid=category.gcid).count()
         return Response(
-            {'results': serialize.data}
+            {'results': serialize.data,
+             'ranking_out_of': ranking_total}
         )
 
 
@@ -458,6 +397,8 @@ class GovernmentRankingView(APIView):
         except ValueError:
             raise exceptions.ParseError()
         else:
+            category = Gov.objects.only('gcid').get(govid=govid)
+            ranking_total = Gov.objects.filter(gcid=category.gcid).count()
             serialize = serializers.GovernmentRankingSerializer(
                 query,
                 context={'request': request},
@@ -465,41 +406,9 @@ class GovernmentRankingView(APIView):
             )
 
             return Response(
-                {'results': serialize.data}
+                {'results': serialize.data,
+                 'ranking_out_of': ranking_total}
             )
-
-# def government_ranking_view(request, govid):
-#     """
-#     Return the mandate scores for a government
-#     """
-#     year = request.query_params.get('year', None)
-#     if year is None:
-#         query = Govrank.objects.filter(govid_id=govid)
-#         serialize = serializers.GovernmentRankingSerializer(
-#             query,
-#             context={'request': request},
-#             many=True
-#         )
-#         return Response(
-#             serialize.data
-#         )
-#     else:
-#         try:
-#             int(year)
-#             query = Govrank.objects.get(govid_id=govid,
-#                                         yearid__yr=year)
-#         except Govrank.DoesNotExist:
-#             raise exceptions.NotFound()
-#         except ValueError:
-#             raise exceptions.ParseError()
-#         else:
-#             serialize = serializers.GovernmentRankingSerializer(
-#                 query,
-#                 context={'request': request}
-#             )
-#             return Response(
-#                 serialize.data
-#             )
 
 
 class GroupView(APIView):
