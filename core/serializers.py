@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 
 from . import models
+from . import quintiles
 
 
 class SubGroupingSerializer(serializers.ModelSerializer):
@@ -93,13 +94,18 @@ class CategoryOverallRankingSerializer(serializers.ModelSerializer):
                   'combined_score', 'year')
 
     def to_representation(self, instance):
+        quintile = quintiles.calculate(instance)
         group = {}
         group['government'] = instance.govid.name
         group['data'] = {
             'idp_score': instance.idpscore,
+            'idp_quintile': quintile['idp_score'],
             'service_del_score': instance.servicedelscore,
+            'service_del_quintile': quintile['service_del_score'],
             'finance_score': instance.financescore,
+            'finance_quintile': quintile['finance_score'],
             'hr_score': instance.hrscore,
+            'hr_quintile': quintile['hr_score'],
             'combined_score': instance.combinedscore,
             'gov_score': instance.govscore,
             'year': instance.yearid.yr,
@@ -123,13 +129,18 @@ class GovernmentRankingSerializer(serializers.ModelSerializer):
                   'hr_score', 'gov_score', 'combined_score', 'year')
 
     def to_representation(self, instance):
+        quintile = quintiles.calculate(instance)
         group = {}
         group['ranking'] = instance.ranking
         group['data'] = {
             'idp_score': instance.idpscore,
+            'idp_quintile': quintile['idp_score'],
             'service_del_score': instance.servicedelscore,
+            'service_del_quintile': quintile['service_del_score'],
             'finance_score': instance.financescore,
+            'finance_quintile': quintile['finance_score'],
             'hr_score': instance.hrscore,
+            'hr_quintile': quintile['hr_score'],
             'combined_score': instance.combinedscore,
             'gov_score': instance.govscore,
             'year': instance.yearid.yr,
