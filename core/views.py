@@ -290,11 +290,11 @@ class GovernmentIndicatorRankingView(APIView):
             )
         ),
         coreapi.Field(
-            'indicator',
+            'mandate',
             required=False,
             location='query',
             schema=coreschema.String(
-                description='Unique indicator id'
+                description='Unique Mandate id'
             )
         )
     ])
@@ -303,13 +303,13 @@ class GovernmentIndicatorRankingView(APIView):
         year = self.request.query_params.get(
             'year', Yearref.objects.latest('yearid').yr
         )
-        indicator = self.request.query_params.get('indicator', None)
-        if indicator:
+        mandate = self.request.query_params.get('mandate', None)
+        if mandate:
             query = Govindicatorrank.objects.filter(
                 govid_id=govid,
-                iid=indicator,
+                iid__mgid=mandate,
                 yearid__yr=year
-            )
+            ).select_related('iid')
         else:
             query = Govindicatorrank.objects.filter(
                 govid_id=govid,

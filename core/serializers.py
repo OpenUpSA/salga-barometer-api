@@ -203,6 +203,7 @@ class IndicatorRankSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         group = {}
+        group['Mandate'] = instance.iid.mgid.name
         group['id'] = instance.iid.iid
         group['indicator'] = instance.iid.name
         group['data'] = {
