@@ -199,10 +199,11 @@ class IndicatorRankSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Govindicatorrank
-        fields = ('indicator', 'ranking', 'score', 'year')
+        fields = ('iid', 'indicator', 'ranking', 'score', 'year')
 
     def to_representation(self, instance):
         group = {}
+        group['id'] = instance.iid.iid
         group['indicator'] = instance.iid.name
         group['data'] = {
             'ranking': instance.ranking,

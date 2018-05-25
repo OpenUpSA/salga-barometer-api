@@ -288,6 +288,14 @@ class GovernmentIndicatorRankingView(APIView):
             schema=coreschema.String(
                 description='full year of ranking eg: 2016'
             )
+        ),
+        coreapi.Field(
+            'indicator',
+            required=False,
+            location='query',
+            schema=coreschema.String(
+                description='Unique indicator id'
+            )
         )
     ])
 
@@ -295,7 +303,15 @@ class GovernmentIndicatorRankingView(APIView):
         year = self.request.query_params.get(
             'year', Yearref.objects.latest('yearid').yr
         )
-        query = Govindicatorrank.objects.filter(
+        indicator = self.request.query_params.get('indicator', None)
+        if indicator:
+            query = Govindicatorrank.objects.filter(
+                govid_id=govid,
+                iid=indicator,
+                yearid__yr=year
+            )
+        else:
+            query = Govindicatorrank.objects.filter(
                 govid_id=govid,
                 yearid__yr=year
             )
