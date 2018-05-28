@@ -6,6 +6,7 @@ from rest_framework import exceptions
 from rest_framework import decorators
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 
 from .exceptions import NotEnoughParameters
 from . import averages
@@ -296,6 +297,14 @@ class GovernmentIndicatorRankingView(APIView):
             schema=coreschema.String(
                 description='Unique Mandate id'
             )
+        ),
+        coreapi.Field(
+            'indicator',
+            required=False,
+            location='query',
+            schema=coreschema.String(
+                description='Unique mandare indicator id'
+            )
         )
     ])
 
@@ -304,12 +313,25 @@ class GovernmentIndicatorRankingView(APIView):
             'year', Yearref.objects.latest('yearid').yr
         )
         mandate = self.request.query_params.get('mandate', None)
+        indicator = self.request.query_params.get('indicator', None)
+
+        if indicator and mandate:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if mandate:
             query = Govindicatorrank.objects.filter(
                 govid_id=govid,
                 iid__mgid=mandate,
                 yearid__yr=year
             ).select_related('iid')
+        elif indicator:
+            query = Govindicatorrank.objects.filter(
+                govid_id=govid,
+                iid=indicator,
+                yearid__yr=year,
+            )
         else:
             query = Govindicatorrank.objects.filter(
                 govid_id=govid,
