@@ -38,6 +38,14 @@ urlpatterns = [
         cache_page(600)(views.GovernmentRankingView.as_view()),
         name='rankings_government'),
 
+    # Benchmarks
+    url(r'^benchmarks/mandates$',
+        cache_page(600)(views.BenchmarkMandateView.as_view()),
+        name='benchmark_mandates'),
+    url(r'^benchmarks/indicators/(?P<indicator>[\d]+)$',
+        cache_page(600)(views.BenchmarkIndicatorView.as_view()),
+        name='benchmarks_indicators'),
+
     url(r'^mandate$',
         cache_page(600)(views.MandateView.as_view()),
         name='mandate'),

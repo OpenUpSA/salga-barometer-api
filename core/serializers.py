@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from . import models
 from . import quintiles
+from . import mandates
 
 
 class SubGroupingSerializer(serializers.ModelSerializer):
@@ -196,6 +197,7 @@ class CategoryIndicatorRankSerializer(serializers.ModelSerializer):
 class IndicatorRankSerializer(serializers.ModelSerializer):
     indicator = serializers.StringRelatedField(source='iid')
     year = serializers.StringRelatedField(source='yearid')
+    government = serializers.StringRelatedField(source='govid.name')
 
     class Meta:
         model = models.Govindicatorrank
@@ -203,7 +205,8 @@ class IndicatorRankSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         group = {}
-        group['Mandate'] = instance.iid.mgid.name
+        group['mandate'] = instance.iid.mgid.name
+        group['government'] = instance.govid.name
         group['id'] = instance.iid.iid
         group['indicator'] = instance.iid.name
         group['data'] = {
@@ -292,3 +295,19 @@ class YearSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Yearref
         fields = ('yearid', 'yr')
+
+
+class BenchmarkMandateSerializer(serializers.ModelSerializer):
+    govid = serializers.StringRelatedField(source='govid.name')
+    
+    class Meta:
+        model = models.Govrank
+        exclude = ('rankid', 'yearid', 'ranking')
+
+
+class BenchmarkIndicatorSerializer(serializers.ModelSerializer):
+    govid = serializers.StringRelatedField(source='govid.name')
+
+    class Meta:
+        model = models.Govindicatorrank
+        fields = '__all__'
