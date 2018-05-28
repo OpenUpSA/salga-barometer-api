@@ -163,7 +163,6 @@ class CategoryIndicatorListSerializer(serializers.ListSerializer):
         gov_name_group = set([gov_name.govid.name for gov_name in instance])
         government_list = []
         for gov_name in gov_name_group:
-            print(gov_name)
             groups = {}
             indicator_results = []
             for obj in instance:
@@ -298,7 +297,7 @@ class YearSerializer(serializers.ModelSerializer):
 
 class BenchmarkMandateSerializer(serializers.ModelSerializer):
     govid = serializers.StringRelatedField(source='govid.name')
-    
+
     class Meta:
         model = models.Govrank
         exclude = ('rankid', 'yearid', 'ranking')
