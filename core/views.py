@@ -709,4 +709,3 @@ class BenchmarkIndicatorView(APIView):
         return Response(
             {'results': serialize.data}
         )
-    pass

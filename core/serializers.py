@@ -3,7 +3,6 @@ from rest_framework import serializers
 
 from . import models
 from . import quintiles
-from . import mandates
 
 
 class SubGroupingSerializer(serializers.ModelSerializer):
