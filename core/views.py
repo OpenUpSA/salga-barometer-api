@@ -41,6 +41,7 @@ class CategoryDescriptionView(APIView):
     """
     Return details about a specific government category
     """
+    
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
             'gcid',
@@ -81,7 +82,7 @@ class GovernmentsView(APIView):
 
 class GovernmentDetailView(APIView):
     """
-    Return overview details about a government
+    Return details about a particular government
     """
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
@@ -145,7 +146,7 @@ class GovernmentDetailView(APIView):
 
 class GovernmentIndicatorView(APIView):
     """
-    Return government indicator values
+    Return indicator scores for a particular government
     """
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
@@ -533,31 +534,6 @@ class SubGroupIndicatorView(APIView):
         )
 
 
-@decorators.api_view(['GET'])
-def government_indicators(request, govid):
-    """
-    Return government indicator values
-    """
-    indicators = request.query_params.get('indicator', None)
-    year = request\
-           .query_params\
-           .get('year', Yearref.objects.latest('yearid').yr)
-    if indicators:
-        indi = indicators.split(',')
-        results = Govindicator.objects.filter(
-            govid=govid,
-            yearid__yr=year,
-            iid__parentgid__in=indi
-        )
-        serializer = serializers.GovernmentIndicatorSerializer(
-            results,
-            context={'request': request}
-        )
-    return Response({
-        serializer.data
-    })
-
-
 class MandateView(APIView):
     """
     Return a list of mandates
@@ -620,7 +596,7 @@ class YearView(APIView):
 
 class BenchmarkMandateView(APIView):
     """
-    Return a mandate ranking for a particular government category
+    Return mandate rankings for for a particular government category
     """
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
@@ -667,7 +643,8 @@ class BenchmarkMandateView(APIView):
 
 class BenchmarkIndicatorView(APIView):
     """
-    Return a particular mandate indicator ranking for all governments within a particular government category
+    Return a particular mandate indicator ranking for all governments
+    within a particular government category
     """
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
@@ -675,7 +652,7 @@ class BenchmarkIndicatorView(APIView):
             required=True,
             location='path',
             schema=coreschema.String(
-                description='Unique mandate indicator ID'
+                description='mandate indicator id'
             )
         ),
         coreapi.Field(
@@ -683,7 +660,15 @@ class BenchmarkIndicatorView(APIView):
             required=False,
             location='query',
             schema=coreschema.String(
-                description='full year eg: 2016'
+                description='year eg: 2016'
+            )
+        ),
+        coreapi.Field(
+            'category',
+            required=False,
+            location='query',
+            schema=coreschema.String(
+                description='government category id'
             )
         ),
     ])
