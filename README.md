@@ -4,7 +4,7 @@
 
 The South African Local Government Association (SALGA) is an organisation responsible for local government oversight.
 
-SALGA have created a web-based portal called ![Municipal Barometer](http://www.municipalbarometer.co.za/)
+SALGA have created a web-based portal called [Municipal Barometer](http://www.municipalbarometer.co.za/)
 
 This portal was developed to provide reliable municipal level data for analysis, re-packing and collection. 
 
