@@ -41,7 +41,7 @@ class CategoryDescriptionView(APIView):
     """
     Return details about a specific government category
     """
-    
+
     schema = AutoSchema(manual_fields=[
         coreapi.Field(
             'gcid',

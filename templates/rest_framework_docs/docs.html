@@ -1,0 +1,41 @@
+{% extends "rest_framework_docs/base.html" %}
+{% load staticfiles %}
+
+{% block github_badge %}{% endblock %}
+
+{% block title %}Salga Barometer API{% endblock %}
+
+{% block logo %}
+<a class="navbar-brand" href="https://www.salga.org.za/">South African Local Government Association</a>
+{% endblock %}
+
+{% block jumbotron %}
+<div class="jumbotron">
+    <h1>Salga Barometer API</h1>
+    <h3>
+	<p>The South African Local Government Association (SALGA) is an organisation responsible for local government oversight.
+
+	    SALGA have created a web-based portal called Municipal Barometer
+
+	    This portal was developed to provide reliable municipal level data for analysis, re-packing and collection.
+
+	    This API is a supplement to the Municipal Barometer.</p>
+    </h3>
+</div>
+{% endblock %}
+
+
+
+{% block footer %}
+<div class="footer">
+    <div class="links">
+	
+	<a href="https://www.salga.org.za/">
+	    <img src="{% static 'core/img/logo.png' %}" height="200" width="300">
+	</a>
+	<a href="https://openup.org.za/">
+	    <img src="{% static 'core/img/openup.svg' %}" height="200" width="200">
+	</a>
+    </div>
+</div>
+{% endblock %}
