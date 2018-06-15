@@ -33,8 +33,15 @@ INSTALLED_APPS = [
     #'django.contrib.sessions',
     'django.contrib.staticfiles',
     'rest_framework',
-    'core',
+    'api',
+    'api.categories',
+    'api.benchmarks',
+    'api.governments',
+    'api.groupings',
+    'api.mandate',
+    'api.rankings',
     'rest_framework_docs',
+    #'rest_framework_swagger',
 ]
 
 MIDDLEWARE = [
@@ -76,7 +83,6 @@ DATABASES = {
         'NAME': 'SalgaConverged_sql',
         'ENGINE': 'sqlserver',
         'HOST': os.environ.get('DB_HOST', '172.16.175.128'),
-        'PORT': os.environ.get('DB_PORT', '5171'),
         'USER': os.environ.get('DB_USER', 'mobile'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'salga'),
         'CONN_MAX_AGE': 300
