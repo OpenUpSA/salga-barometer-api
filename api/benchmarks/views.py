@@ -5,9 +5,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
-from api.models import (Yearref,
-                        Govrank,
-                        Govindicatorrank)
+from core.models import (Yearref,
+                         Govrank,
+                         Govindicatorrank)
 
 
 class BenchmarkMandateView(APIView):

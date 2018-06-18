@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
-from api import models
+from core import models
 
 
 class MandateGroupSerializer(serializers.ModelSerializer):
     indicator_link = serializers.HyperlinkedIdentityField(
-        view_name='api:mandates:detail',
+        view_name='api:mandate:detail',
         lookup_field='mgid')
     indicator_set = serializers.StringRelatedField(many=True)
 

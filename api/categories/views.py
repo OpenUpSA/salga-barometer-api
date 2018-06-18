@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from api.models import Govcat
+from core.models import Govcat
 from . import serializers
 
 

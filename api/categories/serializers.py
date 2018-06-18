@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from api import models
+from core import models
 
 
 class GovernmentDetailSerializer(serializers.ModelSerializer):

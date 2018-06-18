@@ -1,6 +1,6 @@
 import math
 
-from .models import Gov
+from core.models import Gov
 
 
 def calculate(government):

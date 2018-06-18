@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
-from api.models import Mandategroup, Indicator
+from core.models import Mandategroup, Indicator
 from . import serializers
 
 

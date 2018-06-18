@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
-from .models import Yearref
+from core.models import Yearref
 from . import serializers
 
 

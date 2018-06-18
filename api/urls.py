@@ -13,9 +13,8 @@ urlpatterns = [
                                   namespace='governments')),
     url(r'^groupings/', include('api.groupings.urls',
                                 namespace='groupings')),
-    url(r'mandate/', include('api.mandate.urls',
-                             namespace='mandates')),
-
+    url(r'^mandate/', include('api.mandate.urls',
+                              namespace='mandate')),
     url(r'^rankings/', include('api.rankings.urls',
                                namespace='rankings')),
 

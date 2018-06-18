@@ -7,9 +7,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
-from api.models import (Yearref,
-                        Govindicatorrank,
-                        Gov, Govrank)
+from django.db.models import Max
+
+from core.models import (Yearref,
+                         Govindicatorrank,
+                         Gov, Govrank)
 from . import serializers
 
 
@@ -38,10 +40,12 @@ class CategoryIndicatorOverallRankView(APIView):
     ])
 
     def get(self, request, cat_id):
-        year = request.query_params.get(
-            'year',
-            Yearref.objects.latest('yearid').yr
-        )
+        year = request.query_params.get('year', None)
+        if not year:
+            year_latest = Govindicatorrank\
+                   .objects\
+                   .aggregate(latest_year=Max('yearid'))
+            year = Yearref.objects.get(yearid=year_latest['latest_year']).yr
         query = Govindicatorrank.objects.filter(govid__gcid=cat_id,
                                                 yearid__yr=year)\
                                         .select_related('govid', 'iid')\
@@ -55,7 +59,8 @@ class CategoryIndicatorOverallRankView(APIView):
             many=True
         )
         return Response(
-            {'results': serialize.data}
+            {'results': serialize.data,
+             'year': year}
         )
 
 
@@ -99,9 +104,13 @@ class GovernmentIndicatorRankingView(APIView):
     ])
 
     def get(self, request, govid):
-        year = self.request.query_params.get(
-            'year', Yearref.objects.latest('yearid').yr
-        )
+        year = self.request.query_params.get('year', None)
+        if not year:
+            year_latest = Govindicatorrank\
+                   .objects\
+                   .aggregate(latest_year=Max('yearid'))
+            year = Yearref.objects.get(yearid=year_latest['latest_year']).yr
+
         mandate = self.request.query_params.get('mandate', None)
         indicator = self.request.query_params.get('indicator', None)
 
@@ -136,7 +145,8 @@ class GovernmentIndicatorRankingView(APIView):
         ranking_total = Gov.objects.filter(gcid=category.gcid).count()
         return Response(
             {'results': serialize.data,
-             'ranking_out_of': ranking_total}
+             'ranking_out_of': ranking_total,
+             'year': year}
         )
 
 
@@ -165,10 +175,12 @@ class GovernmentMandateRankingView(generics.ListAPIView):
     ])
 
     def get(self, request, cat_id):
-        year = self.request.query_params.get(
-            'year',
-            Yearref.objects.latest('yearid').yr
-        )
+        year = self.request.query_params.get('year', None)
+        if not year:
+            year_latest = Govindicatorrank\
+                   .objects\
+                   .aggregate(latest_year=Max('yearid'))
+            year = Yearref.objects.get(yearid=year_latest['latest_year']).yr
 
         query = Govrank.objects.filter(
             yearid__yr=year,
@@ -182,7 +194,8 @@ class GovernmentMandateRankingView(generics.ListAPIView):
         )
 
         return Response(
-            {'results': serialize.data}
+            {'results': serialize.data,
+             'year': year}
         )
 
 

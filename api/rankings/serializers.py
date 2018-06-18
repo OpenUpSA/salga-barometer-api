@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from api import quintiles, models
+from api import quintiles
+from core import models
 
 
 class CategoryIndicatorListSerializer(serializers.ListSerializer):

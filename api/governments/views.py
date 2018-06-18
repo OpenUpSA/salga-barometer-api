@@ -5,7 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from api.models import Gov, Yearref, Govindicator
+from django.db.models import Max
+from core.models import Gov, Yearref, Govindicator
 from api import averages
 
 from . import serializers
@@ -135,10 +136,12 @@ class GovernmentIndicatorView(APIView):
     def get(self, request, govid, format=None):
         subgroup = request.query_params.get('subgroup', None)
         indicators = request.query_params.get('indicator', None)
-        year = request.query_params.get(
-            'year',
-            Yearref.objects.latest('yearid').yr
-        )
+        year = request.query_params.get('year', None)
+        if not year:
+            year_latest = Govindicator\
+                   .objects\
+                   .aggregate(latest_year=Max('yearid'))
+            year = Yearref.objects.get(yearid=year_latest['latest_year']).yr
         if indicators:
             indi = indicators.split(',')
             query = Govindicator.objects.filter(
@@ -170,6 +173,7 @@ class GovernmentIndicatorView(APIView):
 
         return Response(
             {
-                'results': serialize.data
+                'results': serialize.data,
+                'year': year
             }
         )
