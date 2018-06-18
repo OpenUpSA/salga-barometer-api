@@ -5,10 +5,8 @@ coreschema==0.0.4
 dj-database-url==0.5.0
 Django==1.11.13
 django-mssql==1.8
-django-rest-swagger==2.2.0
 django-sqlserver==1.11
 djangorestframework==3.7.7
--e git+https://github.com/ebsuku/django-rest-framework-docs.git@ce7a5593241d4989b4da916b2e78a9aa295d91e2#egg=drfdocs
 future==0.16.0
 gunicorn==19.7.1
 idna==2.6

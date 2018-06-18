@@ -41,8 +41,6 @@ INSTALLED_APPS = [
     'api.groupings',
     'api.mandate',
     'api.rankings',
-    'rest_framework_docs',
-    #'rest_framework_swagger',
 ]
 
 MIDDLEWARE = [
