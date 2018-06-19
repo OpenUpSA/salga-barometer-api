@@ -12,7 +12,7 @@ urlpatterns = [
     url(r'^mandates/categories/(?P<cat_id>[\d]+)$',
         cache_page(600)(views.GovernmentMandateRankingView.as_view()),
         name='category_government'),
-    url(r'^mandates/governments/(?P<govid>[\d]+)$',
+    url(r'^governments/(?P<govid>[\d]+)$',
         cache_page(600)(views.GovernmentRankingView.as_view()),
         name='government'),
 ]
