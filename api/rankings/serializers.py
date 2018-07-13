@@ -48,6 +48,8 @@ class IndicatorRankSerializer(serializers.ModelSerializer):
         fields = ('iid', 'indicator', 'ranking', 'score', 'year')
 
     def to_representation(self, instance):
+        value = instance.iid.govindicator_set.get(yearid=instance.yearid,
+                                                  govid=instance.govid).value
         group = {}
         group['mandate'] = instance.iid.mgid.name
         group['government'] = instance.govid.name
@@ -56,6 +58,7 @@ class IndicatorRankSerializer(serializers.ModelSerializer):
         group['data'] = {
             'ranking': instance.ranking,
             'score': instance.score,
+            'value': value,
             'year': instance.yearid.yr
         }
         return group
