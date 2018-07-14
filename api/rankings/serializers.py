@@ -48,8 +48,15 @@ class IndicatorRankSerializer(serializers.ModelSerializer):
         fields = ('iid', 'indicator', 'ranking', 'score', 'year')
 
     def to_representation(self, instance):
-        value = instance.iid.govindicator_set.get(yearid=instance.yearid,
-                                                  govid=instance.govid).value
+        govid = self.context.get('govid')
+        try:
+            value = models.Govindicator\
+                          .objects\
+                          .get(iid=instance.iid,
+                               yearid=instance.yearid,
+                               govid=govid).value
+        except models.Govindicator.DoesNotExist:
+            value = ''
         group = {}
         group['mandate'] = instance.iid.mgid.name
         group['government'] = instance.govid.name
@@ -83,7 +90,8 @@ class CategoryOverallRankingSerializer(serializers.ModelSerializer):
                   'combined_score', 'year')
 
     def to_representation(self, instance):
-        quintile = quintiles.calculate(instance)
+        ranking_total = self.context.get('ranking_total')
+        quintile = quintiles.calculate(instance, ranking_total)
         group = {}
         group['government'] = instance.govid.name
         group['data'] = {
@@ -118,7 +126,8 @@ class GovernmentRankingSerializer(serializers.ModelSerializer):
                   'hr_score', 'gov_score', 'combined_score', 'year')
 
     def to_representation(self, instance):
-        quintile = quintiles.calculate(instance)
+        ranking_total = self.context.get('ranking_total')
+        quintile = quintiles.calculate(instance, ranking_total)
         group = {}
         group['ranking'] = instance.ranking
         group['data'] = {

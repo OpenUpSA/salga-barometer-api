@@ -3,12 +3,11 @@ import math
 from core.models import Gov
 
 
-def calculate(government):
+def calculate(government, ranking_total):
     """
     calculate the quantiles for this government
     """
     score_quintile = {}
-    ranking_total = Gov.objects.filter(gcid=government.govid.gcid).count()
 
     range_dict = quntiles(ranking_total)
 

@@ -1,11 +1,13 @@
 import coreapi
 import coreschema
+import time
 from rest_framework import generics
 from rest_framework.schemas import AutoSchema
 from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
+
 
 from django.db.models import Max
 
@@ -124,29 +126,34 @@ class GovernmentIndicatorRankingView(APIView):
                 govid_id=govid,
                 iid__mgid=mandate,
                 yearid__yr=year
-            ).select_related('iid')
+            ).select_related('iid', 'yearid',
+                             'govid', 'iid__mgid')
         elif indicator:
             query = Govindicatorrank.objects.filter(
                 govid_id=govid,
                 iid=indicator,
                 yearid__yr=year,
-            )
+            ).select_related('iid', 'yearid',
+                             'govid', 'iid__mgid')
         else:
             query = Govindicatorrank.objects.filter(
                 govid_id=govid,
                 yearid__yr=year
-            )
+            ).select_related('iid', 'yearid', 'govid', 'iid__mgid', 'govid')
+        start = time.time()
         serialize = serializers.IndicatorRankSerializer(
             query,
-            context={'request': request},
+            context={'request': request, 'govid': govid},
             many=True
         )
+        end = time.time()
         category = Gov.objects.only('gcid').get(govid=govid)
         ranking_total = Gov.objects.filter(gcid=category.gcid).count()
         return Response(
             {'results': serialize.data,
              'ranking_out_of': ranking_total,
-             'year': year}
+             'year': year,
+             'time': end-start}
         )
 
 
@@ -185,11 +192,12 @@ class GovernmentMandateRankingView(generics.ListAPIView):
         query = Govrank.objects.filter(
             yearid__yr=year,
             govid__gcid=cat_id
-        ).order_by('ranking')
+        ).order_by('ranking').select_related('govid', 'yearid')
 
+        ranking_total = Gov.objects.filter(gcid=cat_id).count()
         serialize = serializers.CategoryOverallRankingSerializer(
             query,
-            context={'request': request},
+            context={'request': request, 'ranking_total': ranking_total},
             many=True
         )
 
@@ -231,19 +239,24 @@ class GovernmentRankingView(APIView):
                 query = Govrank.objects.filter(
                     govid_id=govid,
                     yearid__yr=year,
-                )
+                ).select_related('govid', 'yearid')
             else:
-                query = Govrank.objects.filter(govid_id=govid)
+                query = Govrank.objects\
+                               .filter(govid_id=govid)\
+                               .select_related('govid', 'yearid')
         except Govrank.DoesNotExist:
             raise exceptions.NotFound()
         except ValueError:
             raise exceptions.ParseError()
         else:
-            category = Gov.objects.only('gcid').get(govid=govid)
+            category = Gov.objects\
+                          .only('gcid')\
+                          .get(govid=govid)
             ranking_total = Gov.objects.filter(gcid=category.gcid).count()
             serialize = serializers.GovernmentRankingSerializer(
                 query,
-                context={'request': request},
+                context={'request': request,
+                         'ranking_total': ranking_total},
                 many=True
             )
 

@@ -67,7 +67,7 @@ class GovernmentDetailView(APIView):
                              govid=govid,
                              iid__parentgid=1116,
                              yearid__yr=year
-                         )
+                         ).select_related('iid')
 
         household = Govindicator\
                     .objects\
@@ -76,7 +76,7 @@ class GovernmentDetailView(APIView):
                             govid=govid,
                             iid__parentgid=1119,
                             yearid__yr=year
-                    )
+                    ).select_related('iid')
 
         pop_density, total_population, area = averages.density(population)
         house_density, _, _ = averages.density(household)
@@ -148,7 +148,7 @@ class GovernmentIndicatorView(APIView):
                 govid=govid,
                 yearid__yr=year,
                 iid__parentgid__in=indi
-            )
+            ).select_related('iid', 'iid__parentgid')
         elif subgroup:
             query = Govindicator\
                 .objects\
@@ -159,7 +159,7 @@ class GovernmentIndicatorView(APIView):
                     yearid__yr=year,
                     iid__parentgid__parentgid=subgroup,
                 )\
-                .select_related('iid')
+                .select_related('iid', 'iid__parentgid')
         else:
             return Response(
                 status=status.HTTP_400_BAD_REQUEST

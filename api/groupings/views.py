@@ -15,7 +15,10 @@ class GroupView(APIView):
     Return a list of the top level indicator groupings
     """
     def get(self, request, format=None):
-        query = Grouping.objects.filter(parentgid__isnull=True)
+        query = Grouping\
+                .objects\
+                .filter(parentgid__isnull=True)\
+                .select_related('parentgid')
         serialize = serializers.GroupingSerializer(
             query,
             context={'request': request},
@@ -43,7 +46,9 @@ class GroupDetailView(APIView):
     ])
 
     def get(self, request, gid, format=None):
-        query = Grouping.objects.filter(parentgid=gid)
+        query = Grouping.objects\
+                        .filter(parentgid=gid)\
+                        .select_related('parentgid')
         serialize = serializers.SubGroupingSerializer(
             query,
             context={'request': request},
@@ -78,9 +83,13 @@ class SubGroupIndicatorView(APIView):
                       .filter(parentgid=gid)\
                       .exists()
         if indi_exists:
-            query = Grouping.objects.filter(gid=gid)
+            query = Grouping.objects\
+                            .filter(gid=gid)\
+                            .select_related('parentgid')
         else:
-            query = Grouping.objects.filter(parentgid=gid)
+            query = Grouping.objects\
+                            .filter(parentgid=gid)\
+                            .select_related('parentgid')
 
         serialize = serializers.GroupingSerializer(
             query,
@@ -91,4 +100,3 @@ class SubGroupIndicatorView(APIView):
         return Response(
             {'results': serialize.data}
         )
-
