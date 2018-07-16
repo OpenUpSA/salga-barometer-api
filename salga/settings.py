@@ -41,11 +41,12 @@ INSTALLED_APPS = [
     'api.groupings',
     'api.mandate',
     'api.rankings',
-    'debug_toolbar',
 ]
 
+if DEBUG:
+    INSTALLED_APPS += ['debug_toolbar']
+
 MIDDLEWARE = [
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     #'django.contrib.sessions.middleware.SessionMiddleware',
@@ -56,12 +57,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+if DEBUG:
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+    INTERNAL_IPS = (
+        '127.0.0.1'
+    )
+
 ROOT_URLCONF = 'salga.urls'
-
-
-INTERNAL_IPS = (
-    '127.0.0.1'
-)
 
 TEMPLATES = [
     {
