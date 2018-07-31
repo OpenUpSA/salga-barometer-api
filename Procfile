@@ -1,1 +1,1 @@
-web: gunicorn salga.wsgi:application  --log-file - 
+web: gunicorn salga.wsgi:application --worker-class gevent  --log-file -
