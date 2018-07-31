@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     #'django.contrib.sessions',
     'django.contrib.staticfiles',
     'rest_framework',
+    'elasticapm.contrib.django',
     'core',
     'api',
     'api.categories',
@@ -47,6 +48,7 @@ if DEBUG:
     INSTALLED_APPS += ['debug_toolbar']
 
 MIDDLEWARE = [
+    'elasticapm.contrib.django.middleware.TracingMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     #'django.contrib.sessions.middleware.SessionMiddleware',
@@ -116,13 +118,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# if not DEBUG:
-#     REST_FRAMEWORK = {
-#         'DEFAULT_RENDERER_CLASSES': (
-#             'rest_framework.renderers.JSONRenderer',
-#         )
-#     }
-
 
 if not DEBUG:
     CACHES = {
@@ -167,7 +162,11 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
             'stream': sys.stdout
-        }
+        },
+        'elasticapm': {
+            'level': 'WARNING',
+            'class': 'elasticapm.contrib.django.handlers.LoggingHandler',
+        },
     },
     'loggers': {
         'django': {
@@ -175,5 +174,23 @@ LOGGING = {
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': True,
         },
+        'core': {
+            'level': 'WARNING',
+            'handlers': ['elasticapm', 'console'],
+            'propagate': False
+        },
+        'api': {
+            'level': 'WARNING',
+            'handlers': ['elasticapm', 'console'],
+            'propagate': False
+        }
     },
+}
+
+ELASTIC_TOKEN = os.environ.get('ELASTIC_TOKEN', 'adLeshibr7griWyrurnUkvucJins&kus')
+APM_SERVER = os.environ.get('APM_SERVER', '')
+ELASTIC_APM = {
+    'SERVICE_NAME': 'Salga Mobile Barometer',
+    'SECRET_TOKEN': ELASTIC_TOKEN,
+    'SERVER_URL': APM_SERVER
 }
