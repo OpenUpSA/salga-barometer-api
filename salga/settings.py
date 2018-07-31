@@ -172,13 +172,13 @@ LOGGING = {
             'formatter': 'simple',
         },
         'elasticapm': {
-            'level': 'WARNING',
+            'level': 'INFO',
             'class': 'elasticapm.contrib.django.handlers.LoggingHandler',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
+            'handlers': ['elasticapm', 'console'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': True,
         },
