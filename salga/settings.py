@@ -155,6 +155,17 @@ LOGGING = {
             'format': '%(asctime)s %(levelname)s %(module)s %(process)d %(thread)d %(message)s'
         }
     },
+    'logstash': {
+            'level': 'DEBUG',
+            'class': 'logstash.TCPLogstashHandler',
+            'host': LOGSTASH_URL,
+            'port': 5959,
+            'version': 1,
+            'message_type': 'logstash',
+            'fqdn': False,
+            'tags': ['SALGA API']
+        },
+
     'handlers': {
         'console': {
             'level': 'DEBUG',
@@ -174,12 +185,12 @@ LOGGING = {
         },
         'core': {
             'level': 'INFO',
-            'handlers': ['elasticapm', 'console'],
+            'handlers': ['elasticapm', 'logstash'],
             'propagate': False
         },
         'api': {
             'level': 'INFO',
-            'handlers': ['elasticapm', 'console'],
+            'handlers': ['elasticapm', 'logstash'],
             'propagate': False
         }
     },
@@ -188,7 +199,7 @@ LOGGING = {
 ELASTIC_TOKEN = os.environ.get('ELASTIC_TOKEN', 'adLeshibr7griWyrurnUkvucJins&kus')
 APM_SERVER = os.environ.get('APM_SERVER', '')
 ELASTIC_APM = {
-    'SERVICE_NAME': 'Salga Mobile Barometer',
+    'SERVICE_NAME': 'Salga API',
     'SECRET_TOKEN': ELASTIC_TOKEN,
     'SERVER_URL': APM_SERVER
 }
