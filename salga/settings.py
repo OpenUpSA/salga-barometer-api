@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    #'django.contrib.sessions',
     'django.contrib.staticfiles',
     'rest_framework',
     'elasticapm.contrib.django',
@@ -49,13 +48,11 @@ if DEBUG:
 
 MIDDLEWARE = [
     'elasticapm.contrib.django.middleware.TracingMiddleware',
+    'elasticapm.contrib.django.middleware.Catch404Middleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    #'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    #'django.contrib.auth.middleware.AuthenticationMiddleware',
-    #'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -133,7 +130,7 @@ if not DEBUG:
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Johannesburg'
 
 USE_I18N = True
 
@@ -148,6 +145,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+LOGSTASH_URL = os.environ.get('LOGSTASH_URL', '')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -161,7 +160,6 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
-            'stream': sys.stdout
         },
         'elasticapm': {
             'level': 'WARNING',
@@ -175,12 +173,12 @@ LOGGING = {
             'propagate': True,
         },
         'core': {
-            'level': 'WARNING',
+            'level': 'INFO',
             'handlers': ['elasticapm', 'console'],
             'propagate': False
         },
         'api': {
-            'level': 'WARNING',
+            'level': 'INFO',
             'handlers': ['elasticapm', 'console'],
             'propagate': False
         }
