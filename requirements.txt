@@ -19,6 +19,7 @@ itypes==1.1.0
 Jinja2==2.10
 MarkupSafe==1.0
 openapi-codec==1.3.2
+python-logstash==0.4.6
 python-tds==1.9.1
 pytz==2018.3
 requests==2.18.4
