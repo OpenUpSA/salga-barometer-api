@@ -155,7 +155,8 @@ LOGGING = {
             'format': '%(asctime)s %(levelname)s %(module)s %(process)d %(thread)d %(message)s'
         }
     },
-    'logstash': {
+    'handlers': {
+        'logstash': {
             'level': 'DEBUG',
             'class': 'logstash.TCPLogstashHandler',
             'host': LOGSTASH_URL,
@@ -165,8 +166,6 @@ LOGGING = {
             'fqdn': False,
             'tags': ['SALGA API']
         },
-
-    'handlers': {
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
